@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px; display: flex; align-items: center; gap: 15px;">
+    <a href="{{ url_for('billing.dashboard') }}" class="btn-icon">
+        <i class='bx bx-arrow-back'></i>
+    </a>
+    <div>
+        <h1>Payment Receipts</h1>
+        <p style="color: var(--text-muted);">History of all payments received.</p>
+    </div>
+</header>
+
+<div class="glass-card" style="padding: 0;">
+    <table style="width: 100%; border-collapse: collapse; color: var(--text-main);">
+        <thead>
+            <tr style="text-align: left; border-bottom: 1px solid var(--glass-border);">
+                <th style="padding: 20px;">Date</th>
+                <th style="padding: 20px;">Receipt ID</th>
+                <th style="padding: 20px;">Reference</th>
+                <th style="padding: 20px;">Invoice #</th>
+                <th style="padding: 20px;">Amount</th>
+                <th style="padding: 20px;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for receipt in receipts %}
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                <td style="padding: 20px;">{{ receipt.date_received.strftime('%d %b %Y') }}</td>
+                <td style="padding: 20px; font-family: monospace;">#R{{ receipt.id }}</td>
+                <td style="padding: 20px;">{{ receipt.reference or '-' }}</td>
+                <td style="padding: 20px;">#{{ receipt.invoice_id }}</td>
+                <td style="padding: 20px; font-weight: bold; color: #34d399;">RM {{
+                    "%.2f"|format(receipt.amount) }}</td>
+                <td style="padding: 20px;">
+                    <a href="{{ url_for('billing.download_receipt_pdf', id=receipt.id) }}" class="btn-icon"
+                        style="color: var(--primary); margin-right: 5px;" title="Download PDF">
+                        <i class='bx bxs-file-pdf'></i>
+                    </a>
+                    <button class="btn-icon" style="color: var(--error);" title="Delete Receipt"
+                        onclick="deleteReceipt({{ receipt.id }})">
+                        <i class='bx bx-trash'></i>
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="padding: 40px; text-align: center; color: var(--text-muted);">
+                    No receipts found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+<script>
+    async function deleteReceipt(id) {
+        if (!confirm('Are you sure you want to delete this payment receipt? The invoice status will be reverted.')) return;
+
+        try {
+            const res = await fetch(`/billing/receipt/${id}/delete`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+
+            if (res.ok && data.status === 'success') {
+                location.reload();
+            } else {
+                alert(data.message || 'Error deleting receipt');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('An error occurred');
+        }
+    }
+</script>
+{% endblock %}

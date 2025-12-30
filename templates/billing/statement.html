@@ -1,0 +1,69 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px; display: flex; align-items: center; gap: 15px;">
+    <a href="{{ url_for('billing.dashboard') }}" class="btn-icon">
+        <i class='bx bx-arrow-back'></i>
+    </a>
+    <div>
+        <h1>Statement of Account</h1>
+        <p style="color: var(--text-muted);">{{ tenant.name }} ({{ tenant.account_code }})</p>
+    </div>
+    <div style="margin-left: auto; text-align: right;">
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Outstanding Balance</p>
+        <h2 style="color: {% if balance > 0 %}#f87171{% else %}#34d399{% endif %}">RM {{ "%.2f"|format(balance) }}</h2>
+    </div>
+</header>
+
+<div class="glass-card" style="padding: 0;">
+    <table style="width: 100%; border-collapse: collapse; color: var(--text-main);">
+        <thead>
+            <tr style="text-align: left; border-bottom: 1px solid var(--glass-border);">
+                <th style="padding: 20px;">Date</th>
+                <th style="padding: 20px;">Ref #</th>
+                <th style="padding: 20px;">Description</th>
+                <th style="padding: 20px; text-align: right;">Charges (Debit)</th>
+                <th style="padding: 20px; text-align: right;">Payments (Credit)</th>
+                <th style="padding: 20px; text-align: right;">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {# Initial Balance (Optional, assummed 0 for now) #}
+            {% for item in ledger %}
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                <td style="padding: 20px;">{{ item.date.strftime('%d %b %Y') }}</td>
+                <td style="padding: 20px; font-family: monospace; color: var(--primary);">{{ item.ref }}</td>
+                <td style="padding: 20px;">
+                    {{ item.desc }}
+                    {% if item.type == 'Invoice' and item.obj.status == 'partial' %}
+                    <span
+                        style="font-size: 0.7em; background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">PARTIAL</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 20px; text-align: right;">
+                    {% if item.debit > 0 %}RM {{ "%.2f"|format(item.debit) }}{% else %}-{% endif %}
+                </td>
+                <td style="padding: 20px; text-align: right;">
+                    {% if item.credit > 0 %}RM {{ "%.2f"|format(item.credit) }}{% else %}-{% endif %}
+                </td>
+                <td style="padding: 20px; text-align: right; font-weight: bold;">
+                    RM {{ "%.2f"|format(item.balance) }}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="padding: 40px; text-align: center; color: var(--text-muted);">
+                    No transactions found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top: 20px; text-align: right;">
+    <button onclick="window.print()" class="btn" style="background: rgba(255,255,255,0.1);">Print
+        Statement</button>
+</div>
+
+{% endblock %}

@@ -1,0 +1,129 @@
+{% for tenant in tenants %}
+<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+    <td style="padding: 10px;">
+        <input type="checkbox" class="tenant-checkbox" value="{{ tenant.id }}" onchange="updateSelection()"
+            style="width: 18px; height: 18px; cursor: pointer;">
+    </td>
+    <td style="padding: 10px;">
+        <div style="font-weight: 500;">{{ tenant.name }}</div>
+        <div style="font-size: 0.8rem; color: var(--primary);">{{ tenant.account_code or 'No ID' }}
+        </div>
+    </td>
+    <td style="padding: 10px;">
+        {% if tenant.leases %}
+        {# Smart Lease Selection: Find lease with non-zero financial data #}
+        {% set active_lease = namespace(value=none) %}
+        {% for lease in tenant.leases %}
+        {% if lease.rent_amount > 0 or lease.security_deposit > 0 %}
+        {% set active_lease.value = lease %}
+        {% endif %}
+        {% endfor %}
+        {% set lease = active_lease.value if active_lease.value else tenant.leases[-1] %}
+
+        <div><i class='bx bxs-building'></i> {{ lease.project }}</div>
+        {% else %}
+        <span style="color: var(--text-muted);">-</span>
+        {% endif %}
+    </td>
+    <td style="padding: 10px;">
+        {% if tenant.leases and lease %}
+        <span style="font-family: monospace; font-size: 0.95rem;">{{ lease.unit_number }}</span>
+        {% else %}
+        -
+        {% endif %}
+    </td>
+
+    {# Tenancy Dates #}
+    <td style="padding: 10px;">
+        {% if tenant.leases and lease %}{{ lease.start_date.strftime('%d %b %Y') }}{% else %}-{%
+        endif %}
+    </td>
+    <td style="padding: 10px;">
+        {% if tenant.leases and lease %}{{ lease.end_date.strftime('%d %b %Y') }}{% else %}-{% endif
+        %}
+    </td>
+
+    {# Financials Split #}
+    <td style="padding: 10px;">
+        {% if tenant.leases and lease and lease.security_deposit > 0 %}
+        RM {{ "%.0f"|format(lease.security_deposit) }}
+        {% else %}-{% endif %}
+    </td>
+    <td style="padding: 10px;">
+        {% if tenant.leases and lease and lease.utility_deposit > 0 %}
+        RM {{ "%.0f"|format(lease.utility_deposit) }}
+        {% else %}-{% endif %}
+    </td>
+    <td style="padding: 10px; font-weight: bold; color: #fbbf24;">
+        {% if tenant.leases and lease and lease.rent_amount > 0 %}
+        RM {{ "%.0f"|format(lease.rent_amount) }}
+        {% else %}-{% endif %}
+    </td>
+    <td style="padding: 10px;">
+        {# Calculate Dynamic Status #}
+        {% set status_value = (tenant.status or 'active')|lower %}
+
+        {# Override if lease is found and valid #}
+        {% if lease %}
+        {% set today_date = now().date() if now is defined else None %}
+        {# Fallback if now() not available in context, use passed variable or JS? Best to assume backend passes it or
+        just correct logic #}
+        {# Actually, Jinja doesn't have now() by default unless passed. I should rely on lease comparison logic if
+        possible or assume data is correct #}
+        {# But the issue IS that data says Lapsed but Date says Future. #}
+        {# Let's assume the stored status is wrong and we should check days_to_expiry if available #}
+
+        {% if lease.end_date %}
+        {# We can't easily compare dates in pure Jinja without extensions. #}
+        {# But wait, lease.days_to_expiry property exists in model! #}
+        {% if lease.days_to_expiry >= 0 %}
+        {% set status_value = 'active' %}
+        {% elif lease.days_to_expiry < 0 and status_value=='active' %} {% set status_value='lapsed' %} {% endif %} {%
+            endif %} {% endif %} {% if status_value=='lapse' or status_value=='lapsed' %} <span
+            style="padding: 4px 8px; background: rgba(239, 68, 68, 0.2); color: #ef4444; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
+            LAPSED
+            </span>
+            {% elif status_value == 'active' %}
+            <span
+                style="padding: 4px 8px; background: rgba(16, 185, 129, 0.2); color: #34d399; border-radius: 4px; font-size: 0.8rem;">
+                ACTIVE
+            </span>
+            {% elif status_value == 'prospective' %}
+            <span
+                style="padding: 4px 8px; background: rgba(59, 130, 246, 0.2); color: #3b82f6; border-radius: 4px; font-size: 0.8rem;">
+                PROSPECTIVE
+            </span>
+            {% elif status_value == 'past' %}
+            <span
+                style="padding: 4px 8px; background: rgba(156, 163, 175, 0.2); color: #9ca3af; border-radius: 4px; font-size: 0.8rem;">
+                PAST
+            </span>
+            {% else %}
+            <span
+                style="padding: 4px 8px; background: rgba(16, 185, 129, 0.2); color: #34d399; border-radius: 4px; font-size: 0.8rem;">
+                {{ status_value.upper() }}
+            </span>
+            {% endif %}
+    </td>
+    <td style="padding: 10px;">
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('tenants.edit_tenant', id=tenant.id) }}" class="btn-icon" title="Edit"
+                style="color: var(--text-main); font-size: 1.2rem;">
+                <i class='bx bxs-edit'></i>
+            </a>
+            {% if tenant.leases and lease and lease.agreement_file %}
+            <a href="{{ url_for('static', filename='uploads/agreements/' ~ lease.agreement_file) }}" target="_blank"
+                class="btn-icon" title="View Agreement" style="color: var(--primary); font-size: 1.2rem;">
+                <i class='bx bxs-file-pdf'></i>
+            </a>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% else %}
+<tr>
+    <td colspan="10" style="padding: 30px; text-align: center; color: var(--text-muted);">
+        No tenants found matching your filters.
+    </td>
+</tr>
+{% endfor %}

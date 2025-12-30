@@ -1,0 +1,490 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1>Property Inventory</h1>
+        <p style="color: var(--text-muted);">View status of all units.</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <a href="{{ url_for('properties.bulk_upload') }}" class="btn"
+            style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-main);">
+            <i class='bx bx-cloud-upload'></i> Bulk Upload
+        </a>
+        <a href="{{ url_for('properties.add_property') }}" class="btn btn-primary">
+            <i class='bx bx-plus'></i> Add Property
+        </a>
+    </div>
+</header>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <a href="{{ url_for('properties.dashboard', status='vacant') }}" style="text-decoration: none; color: inherit;">
+        <div class="glass-card stat-card" style="cursor: pointer; transition: transform 0.2s;">
+            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #34d399;">
+                <i class='bx bx-check-circle'></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ stats.vacancy }}</h3>
+                <p>Vacant Units</p>
+            </div>
+        </div>
+    </a>
+    <a href="{{ url_for('properties.dashboard', status='occupied') }}" style="text-decoration: none; color: inherit;">
+        <div class="glass-card stat-card" style="cursor: pointer; transition: transform 0.2s;">
+            <div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: #f87171;">
+                <i class='bx bx-user'></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ stats.occupancy }}</h3>
+                <p>Occupied Units</p>
+            </div>
+        </div>
+    </a>
+    <div class="glass-card stat-card">
+        <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa;">
+            <i class='bx bx-chart'></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ "%.1f"|format(stats.rate) }}%</h3>
+            <p>Occupancy Rate</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Filter Pills */
+    .filter-pill {
+        border: none;
+        padding: 4px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        background: transparent;
+        color: var(--text-muted);
+    }
+
+    .filter-pill.active {
+        background: var(--primary);
+        color: #000;
+    }
+
+    .filter-pill.active-vacant {
+        background: var(--success);
+        color: #000;
+    }
+
+    .filter-pill.active-occupied {
+        background: var(--error);
+        color: #000;
+    }
+
+    /* Toggle Button */
+    .toggle-btn {
+        background: transparent;
+        border: 1px solid var(--glass-border);
+        padding: 8px 12px;
+        border-radius: 6px;
+        color: var(--text-main);
+        cursor: pointer;
+    }
+
+    .toggle-btn.active {
+        background: var(--primary);
+        color: #000;
+    }
+
+    /* Property Card Borders */
+    .border-status-archived {
+        border-left: 4px solid #888;
+    }
+
+    .border-status-occupied {
+        border-left: 4px solid #f87171;
+    }
+
+    .border-status-vacant {
+        border-left: 4px solid #34d399;
+    }
+
+    /* Status Pills */
+    .pill-status {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+
+    .pill-status-archived {
+        background: rgba(128, 128, 128, 0.2);
+        color: #888;
+    }
+
+    .pill-status-occupied {
+        background: rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+    }
+
+    .pill-status-vacant {
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+    }
+</style>
+
+<!-- Filters -->
+<!-- Filters -->
+<div style="margin-bottom: 20px;">
+    <form action="{{ url_for('properties.dashboard') }}" method="GET"
+        style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end;">
+
+        <!-- Search -->
+        <div style="position: relative;">
+            <i class='bx bx-search' style="position: absolute; left: 10px; top: 10px; color: var(--text-muted);"></i>
+            <input type="text" name="search" placeholder="Search Unit/Project..."
+                value="{{ current_filters.search or '' }}"
+                style="padding: 8px 8px 8px 32px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main); width: 200px;">
+        </div>
+
+        <!-- Project Filter -->
+        <select name="project" onchange="this.form.submit()"
+            style="padding: 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main);">
+            <option value="" style="color: black;">All Projects</option>
+            {% for p in projects %}
+            <!-- projects is now a list of Project objects -->
+            <option value="{{ p.name }}" style="color: black;" {% if current_filters.project==p.name %}selected{% endif
+                %}>{{ p.name }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <!-- Type Filter -->
+        <select name="type" onchange="this.form.submit()"
+            style="padding: 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main);">
+            <option value="" style="color: black;">All Types</option>
+            <option value="Commercial" style="color: black;" {% if current_filters.type=='Commercial' %}selected{% endif
+                %}>Commercial</option>
+            <option value="Residential" style="color: black;" {% if current_filters.type=='Residential' %}selected{%
+                endif %}>Residential</option>
+        </select>
+
+        <!-- Status Filter (as pills) -->
+        <div style="display: flex; gap: 5px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 8px;">
+            <button type="submit" name="status" value=""
+                class="btn-sm filter-pill {{ 'active' if not current_filters.status }}">
+                All
+            </button>
+            <button type="submit" name="status" value="vacant"
+                class="btn-sm filter-pill {{ 'active-vacant' if current_filters.status == 'vacant' }}">
+                Vacant
+            </button>
+            <button type="submit" name="status" value="occupied"
+                class="btn-sm filter-pill {{ 'active-occupied' if current_filters.status == 'occupied' }}">
+                Occupied
+            </button>
+        </div>
+
+        <!-- Show Archived Toggle -->
+        <button type="submit" name="show_archived" value="{{ 'false' if current_filters.show_archived else 'true' }}"
+            class="btn-sm toggle-btn {{ 'active' if current_filters.show_archived }}">
+            <i class='bx bx-archive'></i> {{ 'Hide' if current_filters.show_archived else 'Show' }} Archived
+        </button>
+
+    </form>
+</div>
+
+<!-- Bulk Delete Controls -->
+<div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
+            <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()"
+                style="width: 18px; height: 18px; cursor: pointer;">
+            <span>Select All</span>
+        </label>
+        <span id="selectedCount" style="color: var(--text-muted); font-size: 0.9rem;">0 selected</span>
+    </div>
+    <button id="deleteSelectedBtn" onclick="deleteSelected()" class="btn"
+        style="background: linear-gradient(135deg, #ef4444, #dc2626); border: none; display: none;">
+        <i class='bx bx-trash'></i> Delete Selected
+    </button>
+</div>
+
+<!-- Property Groups -->
+<div style="display: flex; flex-direction: column; gap: 40px;">
+    {% for project_name, items in property_groups %}
+    <div>
+        <h2
+            style="margin-bottom: 20px; border-bottom: 2px solid var(--glass-border); padding-bottom: 10px; color: var(--text-main);">
+            {{ project_name if project_name else 'Unassigned' }}
+            <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal; margin-left: 10px;">({{
+                items|length }} units)</span>
+        </h2>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+            {% for prop in items %}
+            {% if prop.status == 'occupied' and prop.leases %}
+            {% set current_lease = prop.leases[-1] %}
+            <div class="glass-card {{ 'border-status-archived' if prop.archived else 'border-status-occupied' }}"
+                style="padding: 20px; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
+
+                <!-- Card Header -->
+                <div
+                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="checkbox" class="property-checkbox" value="{{ prop.id }}"
+                            onchange="updateSelection()" style="width: 18px; height: 18px; cursor: pointer;">
+                        <h3 style="font-size: 1.2rem; margin: 0;">{{ prop.unit_number }}</h3>
+                    </div>
+                    <span class="pill-status {{ 'pill-status-archived' if prop.archived else 'pill-status-occupied' }}">
+                        {{ 'Archived' if prop.archived else 'Occupied' }}
+                    </span>
+                </div>
+
+                <a href="{{ url_for('tenants.edit_tenant', id=current_lease.tenant.id) }}"
+                    style="text-decoration: none; color: inherit; flex-grow: 1;">
+
+                    <!-- Image -->
+                    {% if prop.image_path %}
+                    <div
+                        style="width: 100%; height: 120px; background-image: url('{{ url_for('static', filename=prop.image_path) }}'); background-size: cover; background-position: center; border-radius: 6px; margin-bottom: 10px;">
+                    </div>
+                    {% endif %}
+
+                    <div style="margin-bottom: 10px;">
+                        <p style="font-size: 0.95rem; color: var(--text-main); font-weight: 500; margin-bottom: 5px;">{{
+                            current_lease.tenant.name }}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">Exp: {{
+                                current_lease.end_date.strftime('%d %b %Y') }}</p>
+                            <p style="font-size: 0.9rem; color: var(--success); font-weight: bold;">RM {{
+                                "%.2f"|format(prop.target_rent) }}</p>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Action Footer -->
+                <div
+                    style="margin-top: auto; padding-top: 15px; border-top: 1px solid var(--glass-border); display: flex; justify-content: flex-end; gap: 15px;">
+                    <a href="{{ url_for('properties.edit_property', id=prop.id) }}" class="btn-icon"
+                        title="Edit Property"
+                        style="color: var(--text-main); font-size: 1.2rem; padding: 5px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                        <i class='bx bxs-edit'></i>
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <!-- Vacant or No Lease -->
+            <div class="glass-card {{ 'border-status-archived' if prop.archived else 'border-status-vacant' }}"
+                style="padding: 20px; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
+
+                <!-- Card Header -->
+                <div
+                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="checkbox" class="property-checkbox" value="{{ prop.id }}"
+                            onchange="updateSelection()" style="width: 18px; height: 18px; cursor: pointer;">
+                        <h3 style="font-size: 1.2rem; margin: 0;">{{ prop.unit_number }}</h3>
+                    </div>
+                    <span class="pill-status {{ 'pill-status-archived' if prop.archived else 'pill-status-vacant' }}">
+                        {{ 'Archived' if prop.archived else 'Vacant' }}
+                    </span>
+                </div>
+
+                <a href="{{ url_for('tenants.add_tenant', unit=prop.unit_number) if not prop.archived else '#' }}"
+                    style="text-decoration: none; color: inherit; flex-grow: 1; {{ 'pointer-events: none; opacity: 0.6;' if prop.archived else '' }}">
+
+                    <!-- Image -->
+                    {% if prop.image_path %}
+                    <div
+                        style="width: 100%; height: 120px; background-image: url('{{ url_for('static', filename=prop.image_path) }}'); background-size: cover; background-position: center; border-radius: 6px; margin-bottom: 10px;">
+                    </div>
+                    {% endif %}
+
+                    {% if not prop.archived %}
+                    <div style="margin-bottom: 15px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 1rem; color: var(--text-main); font-weight: bold;">RM {{
+                                "%.2f"|format(prop.target_rent) }}</span>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">{{ prop.size_sqft or '-' }}
+                                    sqft</div>
+                                {% if prop.furnishing_status %}
+                                <div style="font-size: 0.7rem; color: #fbbf24; margin-top: 2px;">
+                                    <i class='bx bx-chair'></i> {{ prop.furnishing_status }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div style="padding: 15px; text-align: center; color: var(--text-muted); font-style: italic;">
+                        Property Archived
+                    </div>
+                    {% endif %}
+                </a>
+
+                <!-- Footer Actions -->
+                <div
+                    style="margin-top: auto; padding-top: 15px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                    <!-- Rent Out Button (Left) -->
+                    {% if not prop.archived %}
+                    <a href="{{ url_for('tenants.add_tenant', unit=prop.unit_number) }}" class="btn btn-primary"
+                        style="padding: 6px 15px; font-size: 0.9rem; text-decoration: none;">
+                        <i class='bx bx-plus'></i> Rent Out
+                    </a>
+                    {% else %}
+                    <div></div> <!-- Spacer -->
+                    {% endif %}
+
+                    <!-- Icons (Right) -->
+                    <div style="display: flex; gap: 10px;">
+                        <a href="{{ url_for('properties.history', id=prop.id) }}" class="btn-icon" title="View History"
+                            style="color: var(--primary); font-size: 1.2rem; padding: 5px; background: rgba(59, 130, 246, 0.1); border-radius: 4px;">
+                            <i class='bx bx-history'></i>
+                        </a>
+                        <a href="{{ url_for('properties.edit_property', id=prop.id) }}" class="btn-icon"
+                            title="Edit Property"
+                            style="color: var(--text-main); font-size: 1.2rem; padding: 5px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                            <i class='bx bxs-edit'></i>
+                        </a>
+
+                        {% if not prop.archived %}
+                        <button class="btn-icon"
+                            style="color: var(--error); font-size: 1.2rem; padding: 5px; background: rgba(239, 68, 68, 0.1); border-radius: 4px;"
+                            title="Archive Property" onclick="archiveProperty('{{ prop.id }}', '{{prop.unit_number}}')">
+                            <i class='bx bx-archive'></i>
+                        </button>
+                        {% else %}
+                        <button class="btn-icon"
+                            style="color: var(--success); font-size: 1.2rem; padding: 5px; background: rgba(16, 185, 129, 0.1); border-radius: 4px;"
+                            title="Restore Property"
+                            onclick="unarchiveProperty('{{ prop.id }}', '{{prop.unit_number}}')">
+                            <i class='bx bx-archive-out'></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    async function archiveProperty(id, unitNumber) {
+        if (!confirm(`Archive property ${unitNumber}? It will be hidden from the main list.`)) return;
+
+        try {
+            const res = await fetch(`/properties/archive/${id}`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert(data.message || 'Error archiving property');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('An error occurred');
+        }
+    }
+
+    async function unarchiveProperty(id, unitNumber) {
+        if (!confirm(`Restore property ${unitNumber}?`)) return;
+
+        try {
+            const res = await fetch(`/properties/unarchive/${id}`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert(data.message || 'Error restoring property');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('An error occurred');
+        }
+    }
+
+    // Bulk Delete Functions
+    function toggleSelectAll() {
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const checkboxes = document.querySelectorAll('.property-checkbox');
+        checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+        updateSelection();
+    }
+
+    function updateSelection() {
+        const checkboxes = document.querySelectorAll('.property-checkbox');
+        const checked = Array.from(checkboxes).filter(cb => cb.checked);
+        const count = checked.length;
+
+        // Update counter
+        document.getElementById('selectedCount').textContent = count + ' selected';
+
+        // Show/hide delete button
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        deleteBtn.style.display = count > 0 ? 'block' : 'none';
+
+        // Update select all checkbox
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        selectAllCheckbox.checked = count > 0 && count === checkboxes.length;
+        selectAllCheckbox.indeterminate = count > 0 && count < checkboxes.length;
+    }
+
+    function deleteSelected() {
+        const checkboxes = document.querySelectorAll('.property-checkbox:checked');
+        const ids = Array.from(checkboxes).map(cb => cb.value);
+
+        if (ids.length === 0) {
+            alert('No properties selected');
+            return;
+        }
+
+        const confirmMsg = `Are you sure you want to delete ${ids.length} propert${ids.length > 1 ? 'ies' : 'y'}? This will also delete:\n` +
+            `- All associated leases\n` +
+            `- Property images and files\n\n` +
+            `This action CANNOT be undone!`;
+
+        if (!confirm(confirmMsg)) return;
+
+        // Send delete request
+        fetch('/properties/bulk_delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ property_ids: ids })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(`✓ Successfully deleted ${data.deleted_count} propert${data.deleted_count > 1 ? 'ies' : 'y'}`);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('An error occurred while deleting properties');
+            });
+    }
+</script>
+
+<!-- Include Quick Add Tenant Modal -->
+
+
+{% endblock %}

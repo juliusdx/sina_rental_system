@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="login-wrapper">
+    <div class="glass-card login-card">
+        <div class="login-header">
+            <h2>Rental System</h2>
+            <p>Professional Monitoring & Management</p>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="alert alert-error">
+            {{ messages[0] }}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('auth.login') }}" method="POST">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <div class="input-icon">
+                    <i class='bx bx-user'></i>
+                    <input type="text" id="username" name="username" required placeholder="Enter your ID">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-icon">
+                    <i class='bx bx-lock-alt'></i>
+                    <input type="password" id="password" name="password" required placeholder="Enter your password">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                Log In <i class='bx bx-right-arrow-alt'></i>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

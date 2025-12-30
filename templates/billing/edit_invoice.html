@@ -1,0 +1,169 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px;">
+    <h1>Edit Invoice #{{ invoice.id }}</h1>
+    <p style="color: var(--text-muted);">Modify invoice details and line items.</p>
+</header>
+
+<div class="glass-card" style="padding: 30px; max-width: 800px; margin: 0 auto;">
+    <form id="invoiceForm">
+        <!-- Header Info -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+            <div class="form-group">
+                <label>Tenant (Read Only)</label>
+                <input type="text" value="{{ invoice.tenant.name }}" disabled
+                    style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-muted); border-radius: 8px;">
+            </div>
+            <div class="form-group">
+                <label>Due Date</label>
+                <input type="date" name="due_date" value="{{ invoice.due_date }}" required>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Invoice Description</label>
+                <input type="text" name="description" value="{{ invoice.description }}"
+                    placeholder="e.g. Utility Charges - Dec 2024">
+            </div>
+        </div>
+
+        <div
+            style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <h3>Line Items</h3>
+            <button type="button" onclick="addLineItem()" class="btn"
+                style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid transparent;">
+                <i class='bx bx-plus'></i> Add Item
+            </button>
+        </div>
+
+        <!-- Items Container -->
+        <div id="itemsContainer" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px;">
+            {% for item in invoice.line_items %}
+            <div class="line-item"
+                style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <input type="text" placeholder="Description" class="item-desc" value="{{ item.description }}" required>
+                <select class="item-type"
+                    style="padding: 10px; border-radius: 6px; background: white; border: 1px solid var(--glass-border); color: black;">
+                    <option value="Utilities" {% if item.item_type=='Utilities' %}selected{% endif %}
+                        style="color: black;">Utilities</option>
+                    <option value="Rent" {% if item.item_type=='Rent' %}selected{% endif %} style="color: black;">Rent
+                    </option>
+                    <option value="Maintenance" {% if item.item_type=='Maintenance' %}selected{% endif %}
+                        style="color: black;">Maintenance</option>
+                    <option value="Other" {% if item.item_type=='Other' %}selected{% endif %} style="color: black;">
+                        Other</option>
+                </select>
+                <input type="number" step="0.01" placeholder="Amount (RM)" class="item-amount" value="{{ item.amount }}"
+                    required oninput="updateTotal()">
+                <button type="button" onclick="this.parentElement.remove(); updateTotal();"
+                    style="background: none; border: none; color: var(--error); cursor: pointer; font-size: 1.2rem;">
+                    <i class='bx bx-trash'></i>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border);">
+            {# Danger Zone #}
+            <button type="button" onclick="deleteInvoice()" class="btn"
+                style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid var(--error);">
+                <i class='bx bx-trash'></i> Delete Invoice
+            </button>
+
+            <div style="text-align: right; margin-left: auto;">
+                <span style="color: var(--text-muted); margin-right: 10px;">Total Amount:</span>
+                <span id="totalDisplay" style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">RM
+                    0.00</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 15px;">
+            <a href="{{ url_for('billing.dashboard') }}" class="btn"
+                style="background: transparent; border: 1px solid var(--text-muted);">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+
+
+<script>
+    function addLineItem() {
+        const div = document.createElement('div');
+        div.className = 'line-item';
+        div.style.display = 'grid';
+        div.style.gridTemplateColumns = '2fr 1fr 1fr auto';
+        div.style.gap = '10px';
+        div.style.alignItems = 'center';
+        div.style.padding = '15px';
+        div.style.background = 'rgba(255,255,255,0.03)';
+        div.style.borderRadius = '8px';
+
+        div.innerHTML = `
+        <input type="text" placeholder="Description (e.g. Water Bill)" class="item-desc" required>
+        <select class="item-type" style="padding: 10px; border-radius: 6px; background: white; border: 1px solid var(--glass-border); color: black;">
+            <option value="Utilities" style="color: black;">Utilities</option>
+            <option value="Rent" style="color: black;">Rent</option>
+            <option value="Maintenance" style="color: black;">Maintenance</option>
+            <option value="Other" style="color: black;">Other</option>
+        </select>
+        <input type="number" step="0.01" placeholder="Amount (RM)" class="item-amount" required oninput="updateTotal()">
+        <button type="button" onclick="this.parentElement.remove(); updateTotal();" style="background: none; border: none; color: var(--error); cursor: pointer; font-size: 1.2rem;">
+            <i class='bx bx-trash'></i>
+        </button>
+    `;
+        document.getElementById('itemsContainer').appendChild(div);
+    }
+
+    function updateTotal() {
+        let total = 0;
+        document.querySelectorAll('.item-amount').forEach(inp => {
+            total += parseFloat(inp.value || 0);
+        });
+        document.getElementById('totalDisplay').innerText = 'RM ' + total.toFixed(2);
+    }
+
+    document.getElementById('invoiceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const due_date = e.target.due_date.value;
+        const description = e.target.description.value;
+
+        const items = [];
+        document.querySelectorAll('#itemsContainer > div').forEach(div => {
+            items.push({
+                description: div.querySelector('.item-desc').value,
+                type: div.querySelector('.item-type').value,
+                amount: div.querySelector('.item-amount').value
+            });
+        });
+
+        const res = await fetch("{{ url_for('billing.edit_invoice', id=invoice.id) }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ due_date, description, items })
+        });
+
+        if (res.ok) {
+            window.location.href = "{{ url_for('billing.dashboard') }}";
+        } else {
+            alert('Error updating invoice');
+        }
+    });
+
+    async function deleteInvoice() {
+        if (!confirm("Are you sure you want to delete this invoice? This action cannot be undone.")) return;
+
+        const res = await fetch("{{ url_for('billing.delete_invoice', id=invoice.id) }}", {
+            method: 'POST'
+        });
+        if (res.ok) {
+            window.location.href = "{{ url_for('billing.dashboard') }}";
+        } else {
+            alert('Error deleting invoice');
+        }
+    }
+
+    // Initial calc
+    updateTotal();
+</script>
+{% endblock %}

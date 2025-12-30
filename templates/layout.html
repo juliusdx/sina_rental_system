@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="btn-menu" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+        <span class="mobile-brand">Sinaland</span>
+    </div>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    {% include 'includes/sidebar.html' %}
+
+    <main class="main-content">
+        <!-- Optional Global Header? Individual Pages usually implement their own headers -->
+        {% block dashboard_content %}{% endblock %}
+    </main>
+</div>
+{% endblock %}

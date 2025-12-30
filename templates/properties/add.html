@@ -1,0 +1,278 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px; display: flex; align-items: center; gap: 15px;">
+    <a href="{{ url_for('properties.dashboard') }}" style="color: var(--text-muted); font-size: 1.5rem;"><i
+            class='bx bx-arrow-back'></i></a>
+    <div>
+        <h1>Add New Property</h1>
+        <p style="color: var(--text-muted);">Add a property to your inventory.</p>
+    </div>
+</header>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-info">{{ message }}</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<form action="{{ url_for('properties.add_property') }}" method="POST" enctype="multipart/form-data"
+    style="max-width: 800px;">
+    <div class="glass-card" style="padding: 24px; margin-bottom: 30px;">
+        <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+            <i class='bx bx-building-house'></i> Property Details
+        </h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Universal ID Builder -->
+            <div
+                style="grid-column: span 2; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--glass-border);">
+                <label
+                    style="color: var(--primary-color); font-weight: bold; margin-bottom: 15px; display: block;">Universal
+                    Property ID</label>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <!-- Project -->
+                    <div class="form-group" style="margin:0">
+                        <label style="font-size: 0.8rem;">Project</label>
+                        <div style="display: flex; gap: 5px;">
+                            <select name="project_id" id="projectSelect" onchange="generateUniversalID()"
+                                style="flex:1; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                                <option value="" style="color:black">-- Select --</option>
+                                {% for p in projects %}
+                                <option value="{{ p.id }}" data-name="{{ p.name }}" style="color:black">{{ p.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" onclick="openAddProjectModal()" class="btn"
+                                style="padding: 0 10px; border: 1px solid var(--primary-color); background: rgba(59, 130, 246, 0.1); color: var(--primary-color);">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Block -->
+                    <div class="form-group" style="margin:0">
+                        <label style="font-size: 0.8rem;">Block</label>
+                        <input type="text" name="block" id="inputBlock" oninput="generateUniversalID()"
+                            placeholder="A, B..." style="padding: 10px; border-radius: 8px; width: 100%;">
+                    </div>
+
+                    <!-- Floor -->
+                    <div class="form-group" style="margin:0">
+                        <label style="font-size: 0.8rem;">Floor</label>
+                        <input type="text" name="floor" id="inputFloor" oninput="generateUniversalID()"
+                            placeholder="G, 1..." style="padding: 10px; border-radius: 8px; width: 100%;">
+                    </div>
+
+                    <!-- Unit -->
+                    <div class="form-group" style="margin:0">
+                        <label style="font-size: 0.8rem;">Unit</label>
+                        <input type="text" name="unit" id="inputUnit" oninput="generateUniversalID()"
+                            placeholder="01, 3A..." style="padding: 10px; border-radius: 8px; width: 100%;">
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div class="form-group">
+                    <label style="font-size: 0.8rem; color: var(--text-muted);">Generated Universal ID (Unique
+                        Key)</label>
+                    <input type="text" name="unit_number" id="universalID" required readonly
+                        style="background: rgba(0,0,0,0.3); color: #fbbf24; font-family: monospace; font-size: 1.1rem; letter-spacing: 1px; border-color: #fbbf24;">
+                    <small style="color: var(--text-muted);">Auto-generated: [Project]-[Block]-[Floor]-[Unit]</small>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Category</label>
+                <select name="property_category"
+                    style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    <option value="" style="color: black;">-- Select Category --</option>
+                    <option value="Residential" style="color: black;">Residential</option>
+                    <option value="Commercial" style="color: black;">Commercial</option>
+                    <option value="Industrial" style="color: black;">Industrial</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Property Type</label>
+                <select name="property_type" id="propertyTypeSelect" onchange="toggleFurnishing()"
+                    style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    <option value="" style="color: black;">-- Select --</option>
+                    <option value="Shop" style="color: black;">Shop</option>
+                    <option value="Office" style="color: black;">Office</option>
+                    <option value="Apartment" style="color: black;">Apartment</option>
+                    <option value="Condo" style="color: black;">Condo</option>
+                    <option value="Warehouse" style="color: black;">Warehouse</option>
+                    <option value="Stall" style="color: black;">Stall</option>
+                    <option value="Other" style="color: black;">Other</option>
+                </select>
+            </div>
+
+
+
+            <div class="form-group">
+                <label>Unit Position</label>
+                <select name="unit_position"
+                    style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    <option value="" style="color: black;">-- Select Position --</option>
+                    <option value="Intermediate" style="color: black;">Intermediate</option>
+                    <option value="Corner" style="color: black;">Corner</option>
+                    <option value="End Lot" style="color: black;">End Lot</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="furnishingField" style="display: none;">
+                <label>Furnishing Status</label>
+                <select name="furnishing_status"
+                    style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    <option value="" style="color: black;">-- Select Status --</option>
+                    <option value="Unfurnished" style="color: black;">Unfurnished</option>
+                    <option value="Partially Furnished" style="color: black;">Partially Furnished</option>
+                    <option value="Fully Furnished" style="color: black;">Fully Furnished</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Size (sq ft)</label>
+                <input type="number" step="0.01" name="size_sqft" placeholder="e.g. 1200">
+            </div>
+
+            <div class="form-group">
+                <label>Target Rent (RM)</label>
+                <input type="number" step="0.01" name="target_rent" placeholder="e.g. 2500.00">
+            </div>
+
+            <div class="form-group">
+                <label>Bedrooms</label>
+                <input type="number" name="bedrooms" value="0">
+            </div>
+
+            <div class="form-group">
+                <label>Bathrooms</label>
+                <input type="number" name="bathrooms" value="0">
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Property Photo</label>
+                <input type="file" name="image" accept="image/*"
+                    style="padding: 10px; border: 1px solid var(--glass-border); border-radius: 8px; width: 100%;">
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Description (Public/Marketing)</label>
+                <textarea name="description" rows="3"
+                    style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;"
+                    placeholder="Marketing description for listings..."></textarea>
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Notes (Internal)</label>
+                <textarea name="notes" rows="3"
+                    style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;"
+                    placeholder="Any internal notes about this property..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 15px;">
+        <a href="{{ url_for('properties.dashboard') }}" class="btn"
+            style="background: transparent; border: 1px solid var(--text-muted);">Cancel</a>
+        <button type="submit" class="btn btn-primary">Add Property</button>
+    </div>
+</form>
+</form>
+
+<!-- Add Project Modal -->
+<div id="addProjectModal" class="modal"
+    style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
+    <div class="modal-content glass-card"
+        style="margin: 15% auto; padding: 30px; border: 1px solid var(--glass-border); width: 400px; max-width: 90%;">
+        <h3>Add New Project</h3>
+        <input type="text" id="newProjectName" placeholder="Project Name"
+            style="width: 100%; margin: 20px 0; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeAddProjectModal()" class="btn"
+                style="background: transparent; border: 1px solid var(--text-muted);">Cancel</button>
+            <button onclick="saveNewProject()" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleFurnishing() {
+        const type = document.getElementById('propertyTypeSelect').value;
+        const field = document.getElementById('furnishingField');
+        const RESIDENTIAL = ['Apartment', 'Condo', 'House', 'Residential'];
+
+        if (RESIDENTIAL.includes(type)) {
+            field.style.display = 'block';
+        } else {
+            field.style.display = 'none';
+        }
+    }
+    function openAddProjectModal() {
+        document.getElementById('addProjectModal').style.display = 'block';
+    }
+
+    function closeAddProjectModal() {
+        document.getElementById('addProjectModal').style.display = 'none';
+        document.getElementById('newProjectName').value = '';
+    }
+
+    async function saveNewProject() {
+        const name = document.getElementById('newProjectName').value;
+        if (!name) return;
+
+        try {
+            const formData = new FormData();
+            formData.append('name', name);
+
+            const res = await fetch("{{ url_for('properties.add_project') }}", {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                // Add to dropdown and select it
+                const select = document.getElementById('projectSelect');
+                const opt = document.createElement('option');
+                opt.value = data.id;
+                opt.text = data.name;
+                opt.style.color = "black";
+                select.add(opt);
+                select.value = data.id;
+
+                closeAddProjectModal();
+            } else {
+                alert(data.message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Error adding project');
+        }
+    }
+    function generateUniversalID() {
+        // Get values
+        const projectSelect = document.getElementById('projectSelect');
+        const project = projectSelect.options[projectSelect.selectedIndex]?.getAttribute('data-name') || '';
+        const block = document.getElementById('inputBlock').value.trim();
+        const floor = document.getElementById('inputFloor').value.trim();
+        const unit = document.getElementById('inputUnit').value.trim();
+
+        // Build parts array (filtering empty)
+        let parts = [project, block, floor, unit].filter(p => p !== '');
+
+        // Join with dash
+        const finalID = parts.join('-');
+
+        // Update Readonly Input
+        document.getElementById('universalID').value = finalID;
+    }
+
+    // Initial call
+    // generateUniversalID(); 
+</script>
+{% endblock %}

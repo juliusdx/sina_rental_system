@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm;
+        }
+
+        body {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 18pt;
+            text-transform: uppercase;
+        }
+
+        .recipient {
+            margin-bottom: 30px;
+        }
+
+        .subject {
+            font-weight: bold;
+            font-size: 12pt;
+            margin-bottom: 20px;
+            text-decoration: underline;
+        }
+
+        .content {
+            margin-bottom: 30px;
+            text-align: justify;
+        }
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 10pt;
+        }
+
+        .invoice-table th,
+        .invoice-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .invoice-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .total-row td {
+            font-weight: bold;
+            background-color: #f9f9f9;
+        }
+
+        .footer {
+            margin-top: 50px;
+            font-size: 10pt;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>Sinaland Properties Sdn Bhd</h1>
+        <div style="font-size: 10pt; color: #666;">
+            123 Main Street, Kuala Lumpur, Malaysia<br>
+            Tel: +60 3-1234 5678 | Email: accounts@sinaland.com
+        </div>
+    </div>
+
+    <div class="recipient">
+        <strong>Date:</strong> {{ date.strftime('%d %B %Y') }}<br><br>
+        <strong>To:</strong><br>
+        {{ tenant.name }}<br>
+        {{ tenant.address_line_1 }}<br>
+        {% if tenant.address_line_2 %}{{ tenant.address_line_2 }}<br>{% endif %}
+        {{ tenant.postcode }} {{ tenant.city }}<br>
+        {{ tenant.state }}
+    </div>
+
+    <div class="subject">
+        RE: {{ severity|upper }} - OUTSTANDING PAYMENT FOR UNIT {{ tenant.leases[-1].unit_number if tenant.leases else
+        'N/A' }}
+    </div>
+
+    <div class="content">
+        <p>Dear Sir/Madam,</p>
+
+        {% if severity == 'Final Notice' %}
+        <p>We write to inform you that despite our previous reminders, we have not received payment for the outstanding
+            invoices listed below. This matter is now <strong>urgently overdue</strong>.</p>
+        <p>We demand that immediate payment of <strong>RM {{ "%.2f"|format(total_due) }}</strong> be made within seven
+            (7) days from the date of this letter to avoid further legal action or termination of tenancy.</p>
+        {% elif severity == 'Demand Letter' %}
+        <p>We note from our records that your account is overdue. We request that you settle the outstanding amount of
+            <strong>RM {{ "%.2f"|format(total_due) }}</strong> immediately.</p>
+        {% else %}
+        <p>This is a gentle reminder that the following invoices remain unpaid. We would appreciate your prompt
+            settlement of the outstanding balance.</p>
+        {% endif %}
+    </div>
+
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th>Invoice / Ref</th>
+                <th>Due Date</th>
+                <th>Description</th>
+                <th style="text-align: right;">Amount (RM)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>#{{ item.invoice_id }}</td>
+                <td>{{ item.due_date.strftime('%d/%m/%Y') }}</td>
+                <td>{{ item.description }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(item.unpaid_amount) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="3" style="text-align: right;">Total Outstanding Due:</td>
+                <td style="text-align: right;">{{ "%.2f"|format(total_due) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Please disregard this letter if you have already made payment within the last 2 days.</p>
+        <p>Payment can be made to:<br>
+            <strong>Bank:</strong> Public Bank Berhad<br>
+            <strong>Account Name:</strong> Sinaland Properties Sdn Bhd<br>
+            <strong>Account No:</strong> 3123456789
+        </p>
+
+        <br><br>
+        <p>Sincerely,</p>
+        <p><strong>Accounts Department</strong><br>
+            Sinaland Properties Sdn Bhd</p>
+    </div>
+</body>
+
+</html>

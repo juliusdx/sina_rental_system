@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1>Aged Receivables Report</h1>
+        <p style="color: var(--text-muted);">Overview of overdue invoices by age classification.</p>
+    </div>
+
+    <button onclick="window.print()" class="btn"
+        style="background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: #fff;">
+        <i class='bx bx-printer'></i> Print Report
+    </button>
+</header>
+
+<div class="glass-card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align: left; border-bottom: 2px solid var(--glass-border);">
+                <th style="padding: 15px; color: #fff;">Tenant</th>
+                <th style="padding: 15px; text-align: right; color: #fff;">Total Due</th>
+                <th style="padding: 15px; text-align: right; color: var(--success);">Current</th>
+                <th style="padding: 15px; text-align: right; color: #facc15;">1-30 Days</th> <!-- Yellow -->
+                <th style="padding: 15px; text-align: right; color: #fb923c;">31-60 Days</th>
+                <!-- Orange/Amber -->
+                <th style="padding: 15px; text-align: right; color: #f87171;">61-90 Days</th> <!-- Red -->
+                <th style="padding: 15px; text-align: right; color: #ef4444; font-weight: bold;">>90 Days</th>
+                <!-- Deep Red -->
+                <th style="padding: 15px; text-align: center; color: #fff;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in report %}
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 15px; font-weight: 500; color: #fff;">
+                    {{ row.tenant.name }}
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ row.tenant.account_code }}
+                    </div>
+                </td>
+                <td style="padding: 15px; text-align: right; font-weight: bold; color: #fff;">
+                    RM {{ "%.2f"|format(row.total) }}
+                </td>
+                <td style="padding: 15px; text-align: right; color: #eee;">
+                    {{ "%.2f"|format(row.current) if row.current > 0 else '-' }}
+                </td>
+                <td
+                    style="padding: 15px; text-align: right; {% if row.d1_30 > 0 %}color: #facc15; font-weight: 500;{% endif %}">
+                    {{ "%.2f"|format(row.d1_30) if row.d1_30 > 0 else '-' }}
+                </td>
+                <td
+                    style="padding: 15px; text-align: right; {% if row.d31_60 > 0 %}color: #fb923c; font-weight: 500;{% endif %}">
+                    {{ "%.2f"|format(row.d31_60) if row.d31_60 > 0 else '-' }}
+                </td>
+                <td
+                    style="padding: 15px; text-align: right; {% if row.d61_90 > 0 %}color: #f87171; font-weight: bold;{% endif %}">
+                    {{ "%.2f"|format(row.d61_90) if row.d61_90 > 0 else '-' }}
+                </td>
+                <td
+                    style="padding: 15px; text-align: right; {% if row.over_90 > 0 %}color: #ef4444; font-weight: bold; text-decoration: underline;{% endif %}">
+                    {{ "%.2f"|format(row.over_90) if row.over_90 > 0 else '-' }}
+                </td>
+                <td style="padding: 15px; text-align: center;">
+                    <a href="{{ url_for('billing.generate_demand_letter', tenant_id=row.tenant.id) }}" target="_blank"
+                        class="btn-icon" title="Generate Demand Letter"
+                        style="color: #fff; background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 4px;">
+                        <i class='bx bxs-file-pdf'> Generate PDF</i>
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" style="padding: 30px; text-align: center; color: var(--text-muted);">
+                    Excellent! No overdue payments found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

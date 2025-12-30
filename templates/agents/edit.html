@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<div class="glass-card" style="max-width: 600px; margin: 0 auto;">
+    <h2 style="margin-bottom: 20px;">Edit Agent: {{ agent.name }}</h2>
+
+    <form method="POST">
+        <div class="form-group">
+            <label>Agent Name *</label>
+            <input type="text" name="name" required value="{{ agent.name }}">
+        </div>
+
+        <div class="form-group">
+            <label>Agency / Company</label>
+            <input type="text" name="company" value="{{ agent.company or '' }}">
+        </div>
+
+        <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" name="phone" value="{{ agent.phone or '' }}">
+        </div>
+
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" name="email" value="{{ agent.email or '' }}">
+        </div>
+
+        <div class="form-group">
+            <label>Status</label>
+            <select name="status">
+                <option value="active" {% if agent.status=='active' %}selected{% endif %}>Active</option>
+                <option value="inactive" {% if agent.status=='inactive' %}selected{% endif %}>Inactive</option>
+            </select>
+        </div>
+
+        <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: space-between;">
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-primary">Update Agent</button>
+                <a href="{{ url_for('agents.list_agents') }}" class="btn"
+                    style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-main);">Cancel</a>
+            </div>
+
+            <button type="button" onclick="deleteAgent('{{ agent.id }}', this)" class="btn"
+                style="background: var(--danger); color: white; border: none;">
+                <i class='bx bx-trash'></i> Delete Agent
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    console.log("Agent Edit Script Loaded");
+    window.deleteAgent = function (id, btn) {
+        if (btn.getAttribute('data-confirm') === 'true') {
+            // Execute Delete
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Deleting...";
+            btn.disabled = true;
+
+            fetch('/agents/delete/' + id, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.href = "{{ url_for('agents.list_agents') }}";
+                    } else {
+                        alert(data.message || 'Error deleting agent');
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        btn.removeAttribute('data-confirm');
+                    }
+                })
+                .catch(err => {
+                    alert("Network Error: " + err);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+        } else {
+            // First Click
+            btn.setAttribute('data-confirm', 'true');
+            btn.innerHTML = "<i class='bx bx-error'></i> Confirm Delete?";
+            btn.style.background = '#b91c1c'; // Darker red
+
+            setTimeout(() => {
+                if (btn && !btn.disabled) {
+                    btn.removeAttribute('data-confirm');
+                    btn.innerHTML = "<i class='bx bx-trash'></i> Delete Agent";
+                    btn.style.background = 'var(--danger)';
+                }
+            }, 3000);
+        }
+    }
+</script>
+{% endblock %}

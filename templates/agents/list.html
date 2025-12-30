@@ -1,0 +1,203 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1>Agent Management</h1>
+        <p style="color: var(--text-muted);">Manage real estate agents and commissions.</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <a href="{{ url_for('agents.commissions_dashboard') }}" class="btn"
+            style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-main);">
+            <i class='bx bx-money'></i> View Commissions
+        </a>
+        <a href="{{ url_for('agents.add_agent') }}" class="btn btn-primary">
+            <i class='bx bx-plus'></i> Add New Agent
+        </a>
+    </div>
+</header>
+
+<div class="glass-card" style="padding: 0; overflow: hidden; position: relative;">
+    <!-- Bulk Action Toolbar -->
+    <div id="bulkToolbar"
+        style="display: none; background: rgba(59, 130, 246, 0.1); padding: 10px 20px; border-bottom: 1px solid var(--glass-border); justify-content: space-between; align-items: center;">
+        <span style="color: var(--primary); font-weight: 500;">
+            <span id="selectedCount">0</span> Selected
+        </span>
+        <button onclick="bulkDelete()" class="btn"
+            style="background: var(--danger); color: white; border: none; padding: 5px 15px; font-size: 0.9rem;">
+            <i class='bx bx-trash'></i> Delete Selected
+        </button>
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: rgba(255,255,255,0.05); text-align: left;">
+                <th style="padding: 15px; width: 40px;">
+                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                </th>
+                <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Agent Name</th>
+                <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Company</th>
+                <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Contact</th>
+                <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Status</th>
+                <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Commissions (Pending)</th>
+                <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for agent in agents %}
+            <tr style="border-bottom: 1px solid var(--glass-border);">
+                <td style="padding: 15px;">
+                    <input type="checkbox" class="row-checkbox" value="{{ agent.id }}" onchange="updateToolbar()">
+                </td>
+                <td style="padding: 15px; font-weight: 500;">
+                    <a href="{{ url_for('agents.edit_agent', id=agent.id) }}"
+                        style="color: var(--text-main); text-decoration: none;">
+                        {{ agent.name }}
+                    </a>
+                </td>
+                <td style="padding: 15px;">{{ agent.company or '-' }}</td>
+                <td style="padding: 15px;">
+                    <div>{{ agent.phone or '' }}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ agent.email or '' }}</div>
+                </td>
+                <td style="padding: 15px;">
+                    {% if agent.status == 'active' %}
+                    <span
+                        style="font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; background: rgba(16, 185, 129, 0.2); color: #34d399;">
+                        Active
+                    </span>
+                    {% else %}
+                    <span
+                        style="font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; background: rgba(128, 128, 128, 0.2); color: #888;">
+                        {{ agent.status|title }}
+                    </span>
+                    {% endif %}
+                </td>
+                <td style="padding: 15px;">
+                    <div>Total: RM {{ "%.0f"|format(agent.total_commissions) }}</div>
+                    {% if agent.pending_commissions > 0 %}
+                    <div style="font-size: 0.8rem; color: var(--error);">Pending: RM {{
+                        "%.0f"|format(agent.pending_commissions) }}</div>
+                    {% else %}
+                    <div style="font-size: 0.8rem; color: var(--success);">All Paid</div>
+                    {% endif %}
+                </td>
+                <td style="padding: 15px; display: flex; gap: 8px;">
+                    <!-- High Contrast Edit Button -->
+                    <a href="{{ url_for('agents.edit_agent', id=agent.id) }}"
+                        style="background: var(--primary); color: white; border-radius: 4px; padding: 6px; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; text-decoration: none;">
+                        <i class='bx bxs-edit' style="font-size: 1.1rem;"></i>
+                    </a>
+                    <!-- High Contrast Delete Button -->
+                    <button type="button" onclick="deleteAgent('{{ agent.id }}', this)"
+                        style="background: var(--danger); color: white; border: none; border-radius: 4px; padding: 6px; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; cursor: pointer;">
+                        <i class='bx bx-trash' style="font-size: 1.1rem;"></i>
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" style="padding: 30px; text-align: center; color: var(--text-muted);">
+                    No agents found. Add one to get started.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function toggleSelectAll() {
+        const checked = document.getElementById('selectAll').checked;
+        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = checked);
+        updateToolbar();
+    }
+
+    function updateToolbar() {
+        const selected = document.querySelectorAll('.row-checkbox:checked').length;
+        const toolbar = document.getElementById('bulkToolbar');
+        const countSpan = document.getElementById('selectedCount');
+
+        if (selected > 0) {
+            toolbar.style.display = 'flex';
+            countSpan.textContent = selected;
+        } else {
+            toolbar.style.display = 'none';
+        }
+    }
+
+    window.deleteAgent = function (id, btn) {
+        // Check if already in confirm state
+        if (btn.getAttribute('data-confirm') === 'true') {
+            // Proceed with delete
+            console.log("Confirmed delete for ID:", id);
+
+            // Show loading state
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i>";
+            btn.disabled = true;
+
+            fetch('/agents/delete/' + id, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Error deleting agent');
+                        // Reset button
+                        btn.innerHTML = originalContent;
+                        btn.disabled = false;
+                        btn.removeAttribute('data-confirm');
+                        btn.style.background = 'var(--danger)';
+                    }
+                })
+                .catch(err => {
+                    console.error("Delete error:", err);
+                    alert("Network Error: " + err);
+                    btn.innerHTML = originalContent;
+                    btn.disabled = false;
+                });
+        } else {
+            // Enter confirm state
+            console.log("Entering confirm state for ID:", id);
+            btn.setAttribute('data-confirm', 'true');
+            btn.style.background = '#b91c1c'; // Darker red
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = "<i class='bx bx-check'></i>"; // Checkmark
+
+            // Auto-reset after 3 seconds
+            setTimeout(() => {
+                if (btn && !btn.disabled) {
+                    btn.removeAttribute('data-confirm');
+                    btn.style.background = 'var(--danger)';
+                    btn.innerHTML = "<i class='bx bx-trash' style='font-size: 1.1rem;'></i>";
+                }
+            }, 3000);
+        }
+    }
+
+    function bulkDelete() {
+        if (!confirm('Delete selected agents?')) return;
+
+        const ids = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+
+        fetch("{{ url_for('agents.bulk_delete') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: ids })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Error deleting agents');
+                }
+            });
+    }
+</script>
+{% endblock %}

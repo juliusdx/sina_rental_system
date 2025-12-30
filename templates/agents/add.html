@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<div class="glass-card" style="max-width: 600px; margin: 0 auto;">
+    <h2 style="margin-bottom: 20px;">Add New Agent</h2>
+
+    <form method="POST">
+        <div class="form-group">
+            <label>Agent Name *</label>
+            <input type="text" name="name" required placeholder="e.g. Sarah Lee">
+        </div>
+
+        <div class="form-group">
+            <label>Agency / Company</label>
+            <input type="text" name="company" placeholder="e.g. Dream Homes Realty">
+        </div>
+
+        <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" name="phone" placeholder="e.g. +6012-345 6789">
+        </div>
+
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" name="email" placeholder="e.g. sarah@example.com">
+        </div>
+
+        <div style="margin-top: 30px; display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-primary">Save Agent</button>
+            <a href="{{ url_for('agents.list_agents') }}" class="btn"
+                style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-main);">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

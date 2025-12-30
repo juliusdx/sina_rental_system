@@ -1,0 +1,165 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px;">
+    <h1>Commission Dashboard</h1>
+    <p style="color: var(--text-muted);">Track and pay agent commissions.</p>
+</header>
+
+<!-- Filters -->
+<div style="margin-bottom: 20px; display: flex; gap: 10px;">
+    <!-- Pending Button -->
+    {% if current_status == 'pending' %}
+    <a href="{{ url_for('agents.commissions_dashboard', status='pending') }}" class="btn"
+        style="background: var(--primary); color: #000;">Pending</a>
+    {% else %}
+    <a href="{{ url_for('agents.commissions_dashboard', status='pending') }}" class="btn"
+        style="background: var(--glass-border); color: var(--text-muted);">Pending</a>
+    {% endif %}
+
+    <!-- Paid Button -->
+    {% if current_status == 'paid' %}
+    <a href="{{ url_for('agents.commissions_dashboard', status='paid') }}" class="btn"
+        style="background: var(--primary); color: #000;">Paid</a>
+    {% else %}
+    <a href="{{ url_for('agents.commissions_dashboard', status='paid') }}" class="btn"
+        style="background: var(--glass-border); color: var(--text-muted);">Paid</a>
+    {% endif %}
+
+    <!-- All Button -->
+    {% if current_status == 'all' %}
+    <a href="{{ url_for('agents.commissions_dashboard', status='all') }}" class="btn"
+        style="background: var(--primary); color: #000;">All</a>
+    {% else %}
+    <a href="{{ url_for('agents.commissions_dashboard', status='all') }}" class="btn"
+        style="background: var(--glass-border); color: var(--text-muted);">All</a>
+    {% endif %}
+</div>
+
+<div class="glass-card" style="padding: 0; overflow: hidden;">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: rgba(255,255,255,0.05); text-align: left;">
+                <th style="padding: 15px; color: var(--text-muted);">Date</th>
+                <th style="padding: 15px; color: var(--text-muted);">Agent</th>
+                <th style="padding: 15px; color: var(--text-muted);">Property / Unit</th>
+                <th style="padding: 15px; color: var(--text-muted);">Amount</th>
+                <th style="padding: 15px; color: var(--text-muted);">Status</th>
+                <th style="padding: 15px; color: var(--text-muted);">Proof</th>
+                <th style="padding: 15px; color: var(--text-muted);">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for comm in commissions %}
+            <tr style="border-bottom: 1px solid var(--glass-border);">
+                <td style="padding: 15px;">{{ comm.created_at.strftime('%Y-%m-%d') }}</td>
+                <td style="padding: 15px;">
+                    <strong>{{ comm.agent.name }}</strong>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ comm.agent.company }}</div>
+                </td>
+                <td style="padding: 15px;">
+                    {{ comm.lease.unit_number }}
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Tenant: {{ comm.lease.tenant.name }}</div>
+                </td>
+                <td style="padding: 15px; color: var(--primary); font-weight: bold;">
+                    RM {{ "%.2f"|format(comm.amount) }}
+                </td>
+                <td style="padding: 15px;">
+                <td style="padding: 15px;">
+                    {% if comm.status == 'paid' %}
+                    <span
+                        style="font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; background: rgba(16, 185, 129, 0.2); color: #34d399;">
+                        Paid
+                    </span>
+                    {% else %}
+                    <span
+                        style="font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); color: #f87171;">
+                        {{ comm.status|title }}
+                    </span>
+                    {% endif %}
+                </td>
+                </td>
+                <td style="padding: 15px;">
+                    {% if comm.payment_proof %}
+                    <a href="{{ url_for('static', filename=comm.payment_proof) }}" target="_blank"
+                        style="color: var(--primary);">
+                        <i class='bx bx-file'></i> View PV
+                    </a>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td style="padding: 15px;">
+                    {% if comm.status == 'pending' %}
+                    <button onclick="openPayModal('{{ comm.id }}', '{{ comm.amount }}', '{{ comm.agent.name }}')"
+                        class="btn-sm btn-primary">
+                        Pay
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" style="padding: 30px; text-align: center; color: var(--text-muted);">
+                    No commissions found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pay Modal -->
+<div id="payModal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="glass-card" style="width: 400px; padding: 30px;">
+        <h3 style="margin-bottom: 20px;">Mark as Paid</h3>
+        <p style="margin-bottom: 20px; color: var(--text-muted);">
+            Paying <strong id="modalAgentName"></strong>: RM <span id="modalAmount"></span>
+        </p>
+
+        <form id="payForm" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Payment Date</label>
+                <input type="date" name="payment_date" required value="{{ today }}">
+            </div>
+
+            <div class="form-group">
+                <label>Reference (Cheque No/Transfer ID)</label>
+                <input type="text" name="reference" placeholder="e.g. MBB-123456">
+            </div>
+
+            <div class="form-group">
+                <label>Upload Payment Voucher / Receipt</label>
+                <input type="file" name="proof" required>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; justify-content: end; gap: 10px;">
+                <button type="button" onclick="closePayModal()" class="btn"
+                    style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-main);">Cancel</button>
+                <button type="submit" class="btn btn-primary">Confirm Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openPayModal(id, amount, agentName) {
+        document.getElementById('payModal').style.display = 'flex';
+        document.getElementById('payForm').action = `/agents/commissions/pay/${id}`;
+        document.getElementById('modalAgentName').textContent = agentName;
+        document.getElementById('modalAmount').textContent = amount;
+    }
+
+    function closePayModal() {
+        document.getElementById('payModal').style.display = 'none';
+    }
+
+    // Close on click outside
+    window.onclick = function (event) {
+        if (event.target == document.getElementById('payModal')) {
+            closePayModal();
+        }
+    }
+</script>
+{% endblock %}

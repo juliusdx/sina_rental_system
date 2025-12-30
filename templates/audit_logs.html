@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px;">
+    <h1>System Audit Log</h1>
+    <p style="color: var(--text-muted);">View recent system activities and security events.</p>
+</header>
+
+<div class="glass-card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align: left; border-bottom: 1px solid var(--glass-border);">
+                <th style="padding: 15px;">Time</th>
+                <th style="padding: 15px;">User</th>
+                <th style="padding: 15px;">Action</th>
+                <th style="padding: 15px;">Target</th>
+                <th style="padding: 15px;">Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 15px; color: var(--text-muted);">{{ log.timestamp.strftime('%Y-%m-%d
+                    %H:%M:%S') }}</td>
+                <td style="padding: 15px;">{{ log.user.username }}</td>
+                <td style="padding: 15px;">
+                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;
+                                {% if log.action == 'DELETE' %}background: rgba(239, 68, 68, 0.2); color: #fca5a5;
+                                {% elif log.action == 'CREATE' %}background: rgba(16, 185, 129, 0.2); color: #34d399;
+                                {% else %}background: rgba(59, 130, 246, 0.2); color: #93c5fd;{% endif %}">
+                        {{ log.action }}
+                    </span>
+                </td>
+                <td style="padding: 15px;">{{ log.target_type }} #{{ log.target_id }}</td>
+                <td style="padding: 15px; color: var(--text-main);">{{ log.details }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="padding: 30px; text-align: center; color: var(--text-muted);">No logs
+                    found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

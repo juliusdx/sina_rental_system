@@ -1,0 +1,320 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px; display: flex; align-items: center; gap: 15px;">
+    <a href="{{ url_for('tenants.list_tenants') }}" class="btn-icon"
+        style="color: var(--text-main); font-size: 1.5rem;">
+        <i class='bx bx-arrow-back'></i>
+    </a>
+    <div>
+        <h1>Add New Tenant</h1>
+        <p style="color: var(--text-muted);">Create tenant profile and assign property.</p>
+    </div>
+</header>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-info">{{ message }}</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<form action="{{ url_for('tenants.add_tenant') }}" method="POST" style="max-width: 1000px;">
+
+    <!-- Section 1: Tenant Details -->
+    <div class="glass-card" style="padding: 24px; margin-bottom: 30px;">
+        <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+            <i class='bx bx-user'></i> Tenant Details
+        </h3>
+
+        <!-- Tenant Status Selection -->
+        <div
+            style="background: rgba(59, 130, 246, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 3px solid var(--primary);">
+            <label style="display: block; margin-bottom: 10px; font-weight: 600;">Tenant Status *</label>
+            <div style="display: flex; gap: 30px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="radio" name="status" value="prospective" checked style="width: 18px; height: 18px;">
+                    <span><strong>Prospective</strong> - Lead/Interested party (no lease required)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="radio" name="status" value="active" id="activeStatusRadio"
+                        style="width: 18px; height: 18px;">
+                    <span><strong>Active</strong> - Current tenant (lease required below)</span>
+                </label>
+            </div>
+            <small style="color: var(--text-muted); display: block; margin-top: 8px;">
+                <i class='bx bx-info-circle'></i> Select 'Prospective' to track leads. Select 'Active' only if creating
+                a lease.
+            </small>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label>Company / Tenant Name *</label>
+                <input type="text" name="name" required placeholder="e.g. ABC Trading Sdn Bhd">
+            </div>
+            <div class="form-group">
+                <label>Account Code / Ref</label>
+                <input type="text" name="account_code" placeholder="e.g. CUST-001">
+            </div>
+
+            <div class="form-group">
+                <label>Company Reg No (SSM)</label>
+                <input type="text" name="company_reg_no" placeholder="e.g. 202401001234">
+            </div>
+
+            <div class="form-group">
+                <label>Contact Person (PIC)</label>
+                <input type="text" name="contact_person" placeholder="e.g. Mr. John Doe">
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" placeholder="john@example.com">
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" name="phone" placeholder="+6012-3456789">
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Section 2: Billing & Tax (New) -->
+    <div class="glass-card" style="padding: 24px; margin-bottom: 30px;">
+        <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+            <i class='bx bx-receipt'></i> Billing & Tax Details
+        </h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Column 1: Address -->
+            <div>
+                <h4 style="margin-bottom: 10px; color: var(--primary);">Billing Address</h4>
+                <div class="form-group">
+                    <label>Address Line 1</label>
+                    <input type="text" name="address_line_1" placeholder="Plot 123">
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>Address Line 2</label>
+                    <input type="text" name="address_line_2" placeholder="Jalan Perindustrian 1">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" name="city" placeholder="Kuala Lumpur">
+                    </div>
+                    <div class="form-group">
+                        <label>State</label>
+                        <input type="text" name="state" placeholder="W.P. Kuala Lumpur">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>Postcode</label>
+                    <input type="text" name="postcode" placeholder="50450">
+                </div>
+            </div>
+
+            <!-- Column 2: Tax -->
+            <div>
+                <h4 style="margin-bottom: 10px; color: var(--primary);">Tax & E-Invoice</h4>
+                <div class="form-group" style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                    <input type="checkbox" name="is_sst_registered" id="is_sst_add" style="width: auto;">
+                    <label for="is_sst_add" style="margin: 0;">SST Registered?</label>
+                </div>
+                <div class="form-group">
+                    <label>SST Registration No.</label>
+                    <input type="text" name="sst_registration_number" placeholder="W10-1234-5678">
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>Tax Identification No. (TIN)</label>
+                    <input type="text" name="tax_identification_number" placeholder="C234567890">
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>MSIC Code</label>
+                    <input type="text" name="msic_code" placeholder="68101">
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>Business Activity</label>
+                    <input type="text" name="business_activity" placeholder="Real Estate Activities">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Lease Details -->
+    <div class="glass-card" id="propertyAssignmentSection" style="padding: 24px; margin-bottom: 30px; display: none;">
+        <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+            <i class='bx bx-key'></i> Property Assignment
+        </h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Select Property to Rent</label>
+                <select name="property_id" id="property_id_select"
+                    style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    <option value="">-- Choose a Vacant Unit --</option>
+                    <option value="NEW" style="color: #fbbf24; font-weight: bold;">+ Create New Property (On the
+                        fly)</option>
+                    {% for prop in properties %}
+                    <option value="{{ prop.id }}" {% if preselected_unit==prop.unit_number %}selected{% endif %}>
+                        {{ prop.unit_number }} ({{ prop.project }}) - {{ prop.property_type or 'Unit' }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <small style="color: var(--text-muted); display: block; margin-top: 5px;">
+                    Only vacant properties are shown. Select "Create New" if the unit doesn't exist yet.
+                </small>
+            </div>
+
+            <!-- Hidden fields for "New Property" mode, revealed via JS if needed (simplified for now: just manual override if 'NEW' selected) -->
+            <!-- Real implementation: We'll just ask for Unit Number manually if they pick NEW -->
+
+            <div id="newPropertyFields"
+                style="display: none; grid-column: span 2; border: 1px dashed var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h4 style="margin-bottom: 10px; color: var(--primary);">New Property Details</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Project Name</label>
+                        <input type="text" name="new_project" placeholder="e.g. GTP">
+                    </div>
+                    <div class="form-group">
+                        <label>Unit Number</label>
+                        <input type="text" name="new_unit_number" placeholder="e.g. G-99">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" name="start_date" required>
+            </div>
+            <div class="form-group">
+                <label>End Date</label>
+                <input type="date" name="end_date" required>
+            </div>
+
+            <div class="form-group">
+                <label>Monthly Rent (RM)</label>
+                <input type="number" step="0.01" name="rent_amount" required>
+            </div>
+
+            <div class="form-group">
+                <label>Security Deposit (RM)</label>
+                <input type="number" step="0.01" name="security_deposit" value="0.00">
+            </div>
+            <div class="form-group">
+                <label>Utility Deposit (RM)</label>
+                <input type="number" step="0.01" name="utility_deposit" value="0.00">
+            </div>
+            <div class="form-group">
+                <label>Misc Deposit (RM)</label>
+                <input type="number" step="0.01" name="misc_deposit" value="0.00">
+            </div>
+
+            <!-- Agent Commission Section -->
+            <div
+                style="grid-column: span 2; margin-top: 15px; border-top: 1px dashed var(--glass-border); padding-top: 15px;">
+                <div class="form-group" style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                    <input type="checkbox" id="has_agent" style="width: auto;">
+                    <label for="has_agent" style="margin: 0; color: var(--primary);">Referred by Agent?</label>
+                </div>
+
+                <div id="agentFields" style="display: none; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>Select Agent</label>
+                        <select name="agent_id">
+                            <option value="">-- Select Agent --</option>
+                            {% for agent in agents %}
+                            <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.company }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Commission Amount (RM)</label>
+                        <input type="number" step="0.01" name="commission_amount" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1rem;">
+        Create Tenant & Lease
+    </button>
+</form>
+
+
+<script>
+    const propSelect = document.querySelector('select[name="property_id"]');
+    const newFields = document.getElementById('newPropertyFields');
+
+    propSelect.addEventListener('change', function () {
+        if (this.value === 'NEW') {
+            newFields.style.display = 'block';
+            newFields.querySelector('input[name="new_unit_number"]').setAttribute('required', 'true');
+        } else {
+            newFields.style.display = 'none';
+            newFields.querySelector('input[name="new_unit_number"]').removeAttribute('required');
+        }
+    });
+
+    // Toggle Property Assignment section based on tenant status
+    const statusRadios = document.getElementsByName('status');
+    const propertySection = document.getElementById('propertyAssignmentSection');
+    const propertySelect = document.getElementById('property_id_select');
+
+    function updatePropertyAssignmentVisibility() {
+        const selectedStatus = document.querySelector('input[name="status"]:checked').value;
+
+        if (selectedStatus === 'active') {
+            // Active tenant needs property assignment
+            propertySection.style.display = 'block';
+            propertySelect.setAttribute('required', 'required');
+
+            // Make lease fields required
+            const leaseFields = propertySection.querySelectorAll('input[name="start_date"], input[name="end_date"], input[name="rent_amount"]');
+            leaseFields.forEach(field => field.setAttribute('required', 'required'));
+        } else {
+            // Prospective/Past tenant doesn't need property
+            propertySection.style.display = 'none';
+            propertySelect.removeAttribute('required');
+            propertySelect.value = ''; // Clear selection
+
+            // Remove required from all fields in the hidden section
+            const leaseFields = propertySection.querySelectorAll('input[name="start_date"], input[name="end_date"], input[name="rent_amount"]');
+            leaseFields.forEach(field => {
+                field.removeAttribute('required');
+                field.value = ''; // Clear values
+            });
+        }
+    }
+
+    // Listen for status changes
+    statusRadios.forEach(radio => {
+        radio.addEventListener('change', updatePropertyAssignmentVisibility);
+    });
+
+    // Initialize on page load
+    updatePropertyAssignmentVisibility();
+
+    // Agent Toggle
+    const agentCheckbox = document.getElementById('has_agent');
+    const agentFields = document.getElementById('agentFields');
+
+    agentCheckbox.addEventListener('change', function () {
+        if (this.checked) {
+            agentFields.style.display = 'grid';
+            agentFields.querySelector('select').setAttribute('required', 'true');
+            agentFields.querySelector('input').setAttribute('required', 'true');
+        } else {
+            agentFields.style.display = 'none';
+            agentFields.querySelector('select').removeAttribute('required');
+            agentFields.querySelector('input').removeAttribute('required');
+            agentFields.querySelector('select').value = '';
+            agentFields.querySelector('input').value = '';
+        }
+    });
+</script>
+{% endblock %}

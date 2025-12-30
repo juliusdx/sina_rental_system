@@ -1,0 +1,321 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px;">
+    <h1>Tenant Directory</h1>
+</header>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-error"
+    style="background: rgba(16, 185, 129, 0.2); border-color: var(--success); color: var(--success); margin-bottom: 5px;">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<!-- Import / Export Controls -->
+<div class="glass-card"
+    style="padding: 24px; margin-bottom: 20px; display: flex; gap: 20px; align-items: center; justify-content: space-between;">
+    <div>
+        <h3>Bulk Operations</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">Upload Excel/CSV to add multiple tenants at
+            once.</p>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <a href="{{ url_for('tenants.download_template') }}" class="btn btn-primary"
+            style="background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); font-weight: 500;">
+            <i class='bx bxs-download'></i> Template
+        </a>
+
+        <!-- Styled File Input -->
+        <label for="bulkUploadFile" class="btn"
+            style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2)); border: 2px solid rgba(59, 130, 246, 0.5); cursor: pointer; margin: 0; font-weight: 500;">
+            <i class='bx bx-file'></i> Choose File
+        </label>
+        <input type="file" id="bulkUploadFile" accept=".xlsx,.xls,.csv" style="display: none;"
+            onchange="document.getElementById('fileNameDisplay').textContent = this.files[0]?.name || 'No file chosen'">
+        <span id="fileNameDisplay" style="color: var(--text-muted); font-size: 0.9rem; min-width: 150px;">No file
+            chosen</span>
+
+        <form action="{{ url_for('tenants.import_tenants') }}" method="POST" enctype="multipart/form-data"
+            style="display: inline;" onsubmit="return validateFileSelected()">
+            <input type="file" name="file" id="uploadFileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+            <button type="submit" class="btn btn-primary" onclick="syncFileInput()">
+                <i class='bx bxs-cloud-upload'></i> Upload
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function syncFileInput() {
+        const fileInput = document.getElementById('bulkUploadFile');
+        const formFileInput = document.getElementById('uploadFileInput');
+        if (fileInput.files.length > 0) {
+            // Create a new FileList with the selected file
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(fileInput.files[0]);
+            formFileInput.files = dataTransfer.files;
+        }
+    }
+
+    function validateFileSelected() {
+        syncFileInput();
+        const formFileInput = document.getElementById('uploadFileInput');
+        if (!formFileInput.files || formFileInput.files.length === 0) {
+            alert('Please select a file first');
+            return false;
+        }
+        return true;
+    }
+</script>
+
+<!-- Status Filter Tabs -->
+<div class="glass-card" style="padding: 0; margin-bottom: 30px; overflow: hidden;">
+    <div style="display: flex; border-bottom: 1px solid var(--glass-border);">
+        <a href="{{ url_for('tenants.list_tenants', status='all', project=current_project, search=current_search) }}"
+            class="status-tab {{ 'active' if current_status == 'all' else '' }}"
+            style="flex: 1; padding: 15px 20px; text-align: center; text-decoration: none; color: {{ 'var(--primary)' if current_status == 'all' else 'var(--text-muted)' }}; border-bottom: {{ '3px solid var(--primary)' if current_status == 'all' else 'none' }}; font-weight: {{ '600' if current_status == 'all' else 'normal' }}; transition: all 0.2s;">
+            <i class='bx bx-list-ul'></i> All
+            <span style="font-size: 0.8rem; opacity: 0.7;">({{ tenants|length }})</span>
+        </a>
+        <a href="{{ url_for('tenants.list_tenants', status='active', project=current_project, search=current_search) }}"
+            class="status-tab"
+            style="flex: 1; padding: 15px 20px; text-align: center; text-decoration: none; color: {{ 'var(--success)' if current_status == 'active' else 'var(--text-muted)' }}; border-bottom: {{ '3px solid var(--success)' if current_status == 'active' else 'none' }}; font-weight: {{ '600' if current_status == 'active' else 'normal' }}; transition: all 0.2s;">
+            <i class='bx bx-check-circle'></i> Active
+        </a>
+        <a href="{{ url_for('tenants.list_tenants', status='prospective', project=current_project, search=current_search) }}"
+            class="status-tab"
+            style="flex: 1; padding: 15px 20px; text-align: center; text-decoration: none; color: {{ 'var(--primary)' if current_status == 'prospective' else 'var(--text-muted)' }}; border-bottom: {{ '3px solid var(--primary)' if current_status == 'prospective' else 'none' }}; font-weight: {{ '600' if current_status == 'prospective' else 'normal' }}; transition: all 0.2s;">
+            <i class='bx bx-user-plus'></i> Prospective
+        </a>
+        <a href="{{ url_for('tenants.list_tenants', status='past', project=current_project, search=current_search) }}"
+            class="status-tab"
+            style="flex: 1; padding: 15px 20px; text-align: center; text-decoration: none; color: {{ 'var(--text-muted)' if current_status != 'past' else '#888' }}; border-bottom: {{ '3px solid #888' if current_status == 'past' else 'none' }}; font-weight: {{ '600' if current_status == 'past' else 'normal' }}; transition: all 0.2s;">
+            <i class='bx bx-archive'></i> Past
+        </a>
+        <a href="{{ url_for('tenants.list_tenants', status='lapsed', project=current_project, search=current_search) }}"
+            class="status-tab"
+            style="flex: 1; padding: 15px 20px; text-align: center; text-decoration: none; color: {{ '#ef4444' if current_status == 'lapsed' else 'var(--text-muted)' }}; border-bottom: {{ '3px solid #ef4444' if current_status == 'lapsed' else 'none' }}; font-weight: {{ '600' if current_status == 'lapsed' else 'normal' }}; transition: all 0.2s;">
+            <i class='bx bx-error-circle'></i> Lapsed
+        </a>
+    </div>
+</div>
+
+<style>
+    .status-tab:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+</style>
+
+<!-- Search and Filters -->
+
+<!-- Filter Controls -->
+<div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+    <form action="{{ url_for('tenants.list_tenants') }}" method="GET"
+        style="display: flex; align-items: center; gap: 10px;">
+
+        <input type="text" name="search" placeholder="Search name, unit, account..." value="{{ current_search or '' }}"
+            style="padding: 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main); width: 250px;">
+        <button type="submit" class="btn-icon"
+            style="background: transparent; border: none; color: var(--primary); cursor: pointer;">
+            <i class='bx bx-search'></i>
+        </button>
+
+        <div style="width: 1px; height: 20px; background: var(--glass-border); margin: 0 10px;"></div>
+
+        <label style="color: var(--text-muted);">Filter by Project:</label>
+        <select name="project" onchange="this.form.submit()"
+            style="padding: 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main);">
+            <option value="" style="color: black;">All Projects</option>
+            {% for p in projects %}
+            <option value="{{ p }}" style="color: black;" {% if current_project==p %}selected{% endif %}>{{ p }}
+            </option>
+            {% endfor %}
+        </select>
+        {% if current_sort %}
+        <input type="hidden" name="sort" value="{{ current_sort }}">
+        {% endif %}
+    </form>
+</div>
+
+<!-- Bulk Delete Controls -->
+<div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
+            <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()"
+                style="width: 18px; height: 18px; cursor: pointer;">
+            <span>Select All</span>
+        </label>
+        <span id="selectedCount" style="color: var(--text-muted); font-size: 0.9rem;">0 selected</span>
+    </div>
+    <button id="deleteSelectedBtn" onclick="deleteSelected()" class="btn"
+        style="background: linear-gradient(135deg, #ef4444, #dc2626); border: none; display: none;">
+        <i class='bx bx-trash'></i> Delete Selected
+    </button>
+</div>
+
+<div style="margin-bottom: 30px; text-align: right;">
+    <a href="{{ url_for('tenants.add_tenant') }}" class="btn btn-primary" style="padding: 12px 24px; font-size: 1rem;">
+        <i class='bx bx-user-plus'></i> Add New Tenant
+    </a>
+</div>
+
+<!-- Tenant List -->
+<div class="glass-card" style="padding: 24px;">
+    <table style="width: 100%; border-collapse: collapse; color: var(--text-main);">
+        <thead>
+            <tr style="text-align: left; border-bottom: 1px solid var(--glass-border);">
+                <th style="padding: 10px; width: 40px;">
+                    <!-- Checkbox column header -->
+                </th>
+                <th style="padding: 10px;">
+                    <a href="{{ url_for('tenants.list_tenants', sort='account', order='desc' if current_sort == 'account' and current_order == 'asc' else 'asc', project=current_project) }}"
+                        style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 5px;">
+                        Account / Name
+                        {% if current_sort == 'account' %}
+                        <i class='bx bx-sort-{{ "z-a" if current_order == "desc" else "a-z" }}'></i>
+                        {% else %}
+                        <i class='bx bxs-sort-alt'></i>
+                        {% endif %}
+                    </a>
+                </th>
+                <th style="padding: 10px;">
+                    <a href="{{ url_for('tenants.list_tenants', sort='project', order='desc' if current_sort == 'project' and current_order == 'asc' else 'asc', project=current_project) }}"
+                        style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 5px;">
+                        Project
+                        {% if current_sort == 'project' %}
+                        <i class='bx bx-sort-{{ "z-a" if current_order == "desc" else "a-z" }}'></i>
+                        {% else %}
+                        <i class='bx bxs-sort-alt'></i>
+                        {% endif %}
+                    </a>
+                </th>
+                <th style="padding: 10px;">
+                    <a href="{{ url_for('tenants.list_tenants', sort='unit', order='desc' if current_sort == 'unit' and current_order == 'asc' else 'asc', project=current_project) }}"
+                        style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 5px;">
+                        Unit
+                        {% if current_sort == 'unit' %}
+                        <i class='bx bx-sort-{{ "z-a" if current_order == "desc" else "a-z" }}'></i>
+                        {% else %}
+                        <i class='bx bxs-sort-alt'></i>
+                        {% endif %}
+                    </a>
+                </th>
+                <th style="padding: 10px;">Start Date</th>
+                <th style="padding: 10px;">End Date</th>
+                <th style="padding: 10px;">Sec. Dep</th>
+                <th style="padding: 10px;">Util. Dep</th>
+                <th style="padding: 10px;">Rent</th>
+                <th style="padding: 10px;">Status</th>
+                <th style="padding: 10px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="tenantTableBody">
+            {% include 'tenants/rows.html' %}
+        </tbody>
+    </table>
+</div>
+
+
+<script>
+    const searchInput = document.querySelector('input[name="search"]');
+    const projectSelect = document.querySelector('select[name="project"]');
+    const tableBody = document.getElementById('tenantTableBody');
+    let debounceTimer;
+
+    searchInput.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            fetchTenants();
+        }, 300);
+    });
+
+    function fetchTenants() {
+        const searchTerm = searchInput.value;
+        const project = projectSelect.value;
+        const params = new URLSearchParams({
+            search: searchTerm,
+            project: project,
+            partial: 'true'
+        });
+
+        fetch(`{{ url_for('tenants.list_tenants') }}?${params.toString()}`)
+            .then(response => response.text())
+            .then(html => {
+                tableBody.innerHTML = html;
+            })
+            .catch(err => console.error('Error fetching tenants:', err));
+    }
+
+    // Bulk Delete Functions
+    function toggleSelectAll() {
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const checkboxes = document.querySelectorAll('.tenant-checkbox');
+        checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+        updateSelection();
+    }
+
+    function updateSelection() {
+        const checkboxes = document.querySelectorAll('.tenant-checkbox');
+        const checked = Array.from(checkboxes).filter(cb => cb.checked);
+        const count = checked.length;
+
+        // Update counter
+        document.getElementById('selectedCount').textContent = count + ' selected';
+
+        // Show/hide delete button
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        deleteBtn.style.display = count > 0 ? 'block' : 'none';
+
+        // Update select all checkbox
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        selectAllCheckbox.checked = count > 0 && count === checkboxes.length;
+        selectAllCheckbox.indeterminate = count > 0 && count < checkboxes.length;
+    }
+
+    function deleteSelected() {
+        const checkboxes = document.querySelectorAll('.tenant-checkbox:checked');
+        const ids = Array.from(checkboxes).map(cb => cb.value);
+
+        if (ids.length === 0) {
+            alert('No tenants selected');
+            return;
+        }
+
+        const confirmMsg = `Are you sure you want to delete ${ids.length} tenant(s)? This will also delete:\n` +
+            `- All associated leases\n` +
+            `- All invoices\n` +
+            `- All receipts\n` +
+            `- All notes\n\n` +
+            `This action CANNOT be undone!`;
+
+        if (!confirm(confirmMsg)) return;
+
+        // Send delete request
+        fetch('{{ url_for("tenants.bulk_delete") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ tenant_ids: ids })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(`✓ Successfully deleted ${data.deleted_count} tenant(s)`);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('An error occurred while deleting tenants');
+            });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: start;">
+    <div>
+        <h1>Review Late Fees</h1>
+        <p style="color: var(--text-muted);">Calculated at 8% of Outstanding Rent. Fees apply if unpaid 7 days
+            after due date.</p>
+    </div>
+
+    <form action="{{ url_for('billing.prepare_late_fees') }}" method="GET"
+        style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border); display: flex; gap: 10px; align-items: flex-end;">
+        <div>
+            <label style="display: block; font-size: 0.8rem; margin-bottom: 5px; color: var(--text-muted);">Assessment
+                Date</label>
+            <input type="date" name="date" value="{{ assessment_date }}" required
+                style="padding: 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;">
+        </div>
+        <button type="submit" class="btn btn-primary">Recalculate</button>
+    </form>
+</header>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div class="alert alert-warning" style="margin-bottom: 20px;">
+    {{ messages[0] }}
+</div>
+{% endif %}
+{% endwith %}
+
+<div class="glass-card">
+    {% if fees %}
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <thead>
+            <tr style="text-align: left; border-bottom: 1px solid var(--glass-border);">
+                <th style="padding: 15px;">Tenant</th>
+                <th style="padding: 15px;">Outstanding Rent Items</th>
+                <th style="padding: 15px;">Calculation</th>
+                <th style="padding: 15px;">Proposed Fee (8%)</th>
+                <th style="padding: 15px;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fee in fees %}
+            <tr id="row-{{ fee.tenant_id }}">
+                <td style="padding: 15px; font-weight: 500;">{{ fee.name }}</td>
+                <td style="padding: 15px;">
+                    <div style="font-weight: bold;">RM {{ "%.2f"|format(fee.outstanding_rent) }}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); max-width: 300px;">
+                        {{ fee.details }}
+                    </div>
+                </td>
+                <td style="padding: 15px; color: var(--text-muted);">8% p.a. (Pro-rated)</td>
+                <td style="padding: 15px; color: #f87171; font-weight: bold;">RM {{
+                    "%.2f"|format(fee.fee_amount) }}</td>
+                <td style="padding: 15px;">
+                    <input type="checkbox" class="fee-checkbox" data-tenant="{{ fee.tenant_id }}"
+                        data-amount="{{ fee.fee_amount }}" data-invoices="{{ fee.invoice_ids }}" checked
+                        style="width: 20px; height: 20px; accent-color: var(--primary);">
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;">
+        <a href="{{ url_for('billing.dashboard') }}" class="btn" style="background: transparent;">Cancel</a>
+        <button onclick="applyFees()" class="btn btn-primary">Apply Selected Fees</button>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <i class='bx bx-check-circle' style="font-size: 3rem; margin-bottom: 10px; display: block;"></i>
+        <p>No overdue rent found. Everyone is up to date!</p>
+    </div>
+    {% endif %}
+</div>
+
+
+<script>
+    async function applyFees() {
+        const checkboxes = document.querySelectorAll('.fee-checkbox:checked');
+        const feesToApply = Array.from(checkboxes).map(cb => ({
+            tenant_id: cb.dataset.tenant,
+            amount: cb.dataset.amount,
+            invoice_ids: cb.dataset.invoices
+        }));
+
+        if (feesToApply.length === 0) {
+            alert("No fees selected.");
+            return;
+        }
+
+        if (!confirm(`Apply late fees for ${feesToApply.length} tenants?`)) return;
+
+        try {
+            const res = await fetch("{{ url_for('billing.apply_late_fees') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fees: feesToApply })
+            });
+
+            const data = await res.json();
+            if (data.status === 'success') {
+                alert(`Successfully applied ${data.count} late fees.`);
+                window.location.href = "{{ url_for('billing.dashboard') }}";
+            } else {
+                alert("Error applying fees.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("An error occurred.");
+        }
+    }
+</script>
+{% endblock %}

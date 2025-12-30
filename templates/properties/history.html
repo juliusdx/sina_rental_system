@@ -1,0 +1,190 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<div style="margin-bottom: 20px;">
+    <a href="{{ url_for('properties.dashboard') }}"
+        style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 5px;">
+        <i class='bx bx-arrow-back'></i> Back to Dashboard
+    </a>
+</div>
+
+<header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: start;">
+    <div>
+        <h1 style="display: flex; align-items: center; gap: 10px;">
+            {{ property.unit_number }}
+            <span
+                style="font-size: 1rem; padding: 4px 8px; border-radius: 6px; background: var(--glass-border); color: var(--text-muted); font-weight: normal;">
+                {{ property.project or 'Unassigned' }}
+            </span>
+        </h1>
+        <p style="color: var(--text-muted);">
+            {{ property.property_type }} &bull; {{ property.status|title }}
+            {% if property.furnishing_status %}
+            &bull; <span style="color: #fbbf24;"><i class='bx bx-chair'></i> {{ property.furnishing_status }}</span>
+            {% endif %}
+        </p>
+    </div>
+    <div style="text-align: right;">
+        <a href="{{ url_for('properties.edit_property', id=property.id) }}" class="btn">
+            <i class='bx bxs-edit'></i> Edit Property
+        </a>
+    </div>
+</header>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+
+    <!-- Left Column: Timelines -->
+    <div style="display: flex; flex-direction: column; gap: 30px;">
+
+        <!-- Tenancy History -->
+        <section>
+            <h2
+                style="color: var(--text-main); border-bottom: 2px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 20px;">
+                <i class='bx bx-history'></i> Tenancy History
+            </h2>
+
+            {% if not tenancy_history %}
+            <div class="glass-card" style="padding: 30px; text-align: center; color: var(--text-muted);">
+                <i class='bx bx-ghost' style="font-size: 3rem; margin-bottom: 10px;"></i>
+                <p>No tenancy history found for this unit.</p>
+            </div>
+            {% else %}
+            <div class="glass-card" style="padding: 0; overflow: hidden;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05); text-align: left;">
+                            <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Tenant</th>
+                            <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Period</th>
+                            <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Rent</th>
+                            <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Status</th>
+                            <th style="padding: 15px; color: var(--text-muted); font-weight: 500; text-align: right;">
+                                Financials</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in tenancy_history %}
+                        <tr style="border-bottom: 1px solid var(--glass-border); transition: background 0.2s;">
+                            <td style="padding: 15px;">
+                                <a href="{{ url_for('tenants.edit_tenant', id=item.tenant.id) }}"
+                                    style="color: var(--text-main); font-weight: 500; text-decoration: none;">
+                                    {{ item.tenant.name }}
+                                </a>
+                            </td>
+                            <td style="padding: 15px; color: var(--text-muted); font-size: 0.9rem;">
+                                {{ item.lease.start_date.strftime('%b %Y') }} - {{ item.lease.end_date.strftime('%b %Y')
+                                }}
+                            </td>
+                            <td style="padding: 15px; color: var(--text-main);">
+                                RM {{ "%.0f"|format(item.lease.rent_amount) }}
+                            </td>
+                            <td style="padding: 15px;">
+                                {% if item.is_active %}
+                                <span
+                                    style="font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; background: rgba(16, 185, 129, 0.2); color: #34d399;">Active</span>
+                                {% else %}
+                                <span
+                                    style="font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; background: var(--glass-border); color: var(--text-muted);">Past</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 15px; text-align: right;">
+                                <div style="font-size: 0.9rem;">
+                                    <span style="color: var(--text-muted);">Paid:</span> RM {{
+                                    "%.0f"|format(item.financials.paid) }}
+                                </div>
+                                {% if item.financials.balance > 1 %}
+                                <div style="font-size: 0.8rem; color: var(--error);">
+                                    Due: RM {{ "%.0f"|format(item.financials.balance) }}
+                                </div>
+                                {% else %}
+                                <div style="font-size: 0.8rem; color: var(--success);">
+                                    Settled
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Maintenance Log -->
+        <section>
+            <h2
+                style="color: var(--text-main); border-bottom: 2px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 20px;">
+                <i class='bx bx-wrench'></i> Maintenance & Issues
+            </h2>
+
+            {% if not issues %}
+            <p style="color: var(--text-muted); font-style: italic;">No maintenance records or complaints found.</p>
+            {% else %}
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                {% for issue in issues %}
+                <div class="glass-card" style="padding: 15px; display: flex; gap: 15px;">
+                    <div style="min-width: 50px; text-align: center;">
+                        <div style="background: var(--glass-border); padding: 5px; border-radius: 6px;">
+                            <div style="font-weight: bold; font-size: 1.1rem;">{{ issue.date.strftime('%d') }}</div>
+                            <div style="font-size: 0.7rem; text-transform: uppercase;">{{ issue.date.strftime('%b') }}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span
+                                style="font-weight: 500; color: var(--error) if issue.category=='Complaint' else 'var(--text-main)'">
+                                {{ issue.category }}
+                            </span>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">by {{ issue.tenant_name }}</span>
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">{{ issue.note }}</p>
+                        {% if issue.attachment %}
+                        <div style="margin-top: 5px;">
+                            <a href="{{ url_for('static', filename=issue.attachment) }}" target="_blank"
+                                style="font-size: 0.8rem; color: var(--primary);">
+                                <i class='bx bx-paperclip'></i> View Attachment
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </section>
+
+    </div>
+
+    <!-- Right Column: Summary / Snapshot -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="glass-card">
+            <h3>Quick Stats</h3>
+            <ul
+                style="list-style: none; padding: 0; margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+                <li style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Total Tenants</span>
+                    <span style="font-weight: bold;">{{ tenancy_history|length }}</span>
+                </li>
+                <li style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Total Issues</span>
+                    <span style="font-weight: bold;">{{ issues|length }}</span>
+                </li>
+                <li style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Current Rent</span>
+                    <span style="font-weight: bold;">
+                        {% if current_lease %}RM {{ "%.0f"|format(current_lease.rent_amount) }}{% else %}-{% endif %}
+                    </span>
+                </li>
+            </ul>
+        </div>
+
+        {% if property.image_path %}
+        <div class="glass-card" style="padding: 10px;">
+            <img src="{{ url_for('static', filename=property.image_path) }}" style="width: 100%; border-radius: 6px;"
+                alt="Property Image">
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

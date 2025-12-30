@@ -1,0 +1,113 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<div style="padding: 20px;">
+    <div style="margin-bottom: 30px;">
+        <h1>User Management</h1>
+        <p style="color: var(--text-muted);">Manage system access and roles.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px; align-items: start;">
+
+        <!-- Register Form Column -->
+        <div>
+            <div class="glass-card" style="padding: 30px;">
+                <h3 style="margin-bottom: 20px; font-size: 1.2rem;"><i class='bx bx-user-plus'></i> Register New User
+                </h3>
+
+                <form method="POST" action="{{ url_for('auth.register_user') }}">
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Username</label>
+                        <input type="text" name="username" required
+                            style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main);">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Role</label>
+                        <select name="role" required
+                            style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main);">
+                            <option value="" disabled selected>Select a role...</option>
+                            <option value="admin">Admin</option>
+                            <option value="coordinator">Coordinator</option>
+                            <option value="accounts">Accounts</option>
+                            <option value="legal">Legal</option>
+                        </select>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">
+                            <i class='bx bx-info-circle'></i>
+                            Select appropriate permission level.
+                        </p>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Password</label>
+                        <input type="password" name="password" required
+                            style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main);">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 30px;">
+                        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Confirm
+                            Password</label>
+                        <input type="password" name="confirm_password" required
+                            style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main);">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">
+                        <i class='bx bx-plus'></i> Create User
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- User List Column -->
+        <div>
+            <div class="glass-card" style="padding: 0; overflow: hidden;">
+                <div style="padding: 20px; border-bottom: 1px solid var(--glass-border);">
+                    <h3 style="margin: 0; font-size: 1.2rem;"><i class='bx bx-list-ul'></i> Existing Users</h3>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05); text-align: left;">
+                            <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">ID</th>
+                            <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Username</th>
+                            <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Role</th>
+                            <th style="padding: 15px; color: var(--text-muted); font-weight: 500;">Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr style="border-bottom: 1px solid var(--glass-border);">
+                            <td style="padding: 15px; color: var(--text-muted);">#{{ user.id }}</td>
+                            <td style="padding: 15px; font-weight: 500;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div
+                                        style="width: 32px; height: 32px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                                        {{ user.username[0]|upper }}
+                                    </div>
+                                    {{ user.username }}
+                                </div>
+                            </td>
+                            <td style="padding: 15px;">
+                                <span style="
+                                    font-size: 0.8rem; 
+                                    padding: 4px 10px; 
+                                    border-radius: 20px; 
+                                    background: {% if user.role == 'admin' %}rgba(239, 68, 68, 0.2){% else %}rgba(59, 130, 246, 0.2){% endif %}; 
+                                    color: {% if user.role == 'admin' %}#fca5a5{% else %}#93c5fd{% endif %};
+                                ">
+                                    {{ user.role|title }}
+                                </span>
+                            </td>
+                            <td style="padding: 15px; color: var(--text-muted);">
+                                - <!-- Date added if available -->
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

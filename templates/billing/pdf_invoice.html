@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: Helvetica, sans-serif;
+            font-size: 11pt;
+            /* Slightly smaller for better fit */
+            color: #333;
+        }
+
+        /* Layout Tables */
+        .layout-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+
+        .layout-table td {
+            border: none;
+            padding: 5px;
+            vertical-align: top;
+        }
+
+        /* Line Items Table */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+            margin-top: 2rem;
+        }
+
+        .items-table th {
+            background-color: #f1f5f9;
+            text-align: left;
+            padding: 8px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .items-table td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .items-table .total-row td {
+            font-weight: bold;
+            border-top: 2px solid #333;
+            font-size: 14pt;
+        }
+
+        .header-title {
+            color: #2c5ba1;
+            font-size: 24pt;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .header-sub {
+            color: #666;
+            margin: 0;
+            margin-bottom: 20px;
+        }
+
+        .meta-label {
+            color: #666;
+            font-size: 9pt;
+            text-transform: uppercase;
+        }
+
+        .meta-value {
+            font-weight: bold;
+            font-size: 11pt;
+        }
+
+        .footer {
+            margin-top: 2cm;
+            font-size: 9pt;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Company Header -->
+    <div style="border-bottom: 2px solid #38bdf8; margin-bottom: 20px; padding-bottom: 10px;">
+        <div class="header-title">RentMonitor</div>
+        <div class="header-sub">Property Management System</div>
+    </div>
+
+    <!-- Info Grid (Horizontal Layout) -->
+    <table class="layout-table">
+        <tr>
+            <td width="25%">
+                <div class="meta-label">Invoice #</div>
+                <div class="meta-value">{{ invoice.id }}</div>
+            </td>
+            <td width="25%">
+                <div class="meta-label">Date</div>
+                <div class="meta-value">{{ invoice.issue_date.strftime('%d %b %Y') }}</div>
+            </td>
+            <td width="25%">
+                <div class="meta-label">Due Date</div>
+                <div class="meta-value">{{ invoice.due_date.strftime('%d %b %Y') }}</div>
+            </td>
+            <td width="25%">
+                <div class="meta-label">Status</div>
+                <div class="meta-value">{{ invoice.status.upper() }}</div>
+            </td>
+        </tr>
+        <tr>
+            {% set active_lease = namespace(value=none) %}
+            {% for lease in invoice.tenant.leases %}
+            {% if lease.rent_amount > 0 %}{% set active_lease.value = lease %}{% endif %}
+            {% endfor %}
+            {% set lease = active_lease.value if active_lease.value else (invoice.tenant.leases[-1] if
+            invoice.tenant.leases else none) %}
+
+            <td colspan="2">
+                {% if lease and lease.project %}
+                <div class="meta-label">Project / Unit</div>
+                <div class="meta-value">{{ lease.project }} - {{ lease.unit_number }}</div>
+                {% else %}
+                &nbsp;
+                {% endif %}
+            </td>
+            <td colspan="2">
+                <!-- Spacing or Extra Info -->
+            </td>
+        </tr>
+    </table>
+
+    <div style="margin-top: 30px; margin-bottom: 20px;">
+        <h3 style="margin: 0 0 10px 0;">Bill To:</h3>
+        <div style="font-size: 12pt; font-weight: bold;">{{ invoice.tenant.name }}</div>
+        {% if invoice.tenant.account_code %}
+        <div>Account: {{ invoice.tenant.account_code }}</div>
+        {% endif %}
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th style="text-align: right;">Amount (RM)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.line_items %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(item.amount) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td>Total</td>
+                <td style="text-align: right;">{{ "%.2f"|format(invoice.total_amount) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>This is a computer-generated invoice. No signature is required.</p>
+        <p>Please include the Invoice # in your payment reference.</p>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,217 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1>All Invoices</h1>
+        <p style="color: var(--text-muted);">Manage and filter all system invoices.</p>
+    </div>
+
+    <a href="{{ url_for('billing.create_custom') }}" class="btn btn-primary">
+        <i class='bx bx-plus'></i> New Invoice
+    </a>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category if category != 'message' else 'info' }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<!-- Filters -->
+<div class="glass-card" style="padding: 20px; margin-bottom: 20px;">
+    <div style="display: flex; gap: 15px; align-items: flex-end; justify-content: space-between;">
+        <form method="GET" action="{{ url_for('billing.list_invoices') }}"
+            style="display: flex; gap: 15px; align-items: flex-end; flex: 1;">
+            <div style="flex: 1;">
+                <label
+                    style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--text-muted);">Search</label>
+                <input type="text" name="search" value="{{ current_filters.search }}"
+                    placeholder="Tenant Name or Invoice #"
+                    style="padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white; width: 100%;">
+            </div>
+
+            <div style="width: 150px;">
+                <label
+                    style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--text-muted);">Status</label>
+                <select name="status"
+                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    <option value="">All Statuses</option>
+                    <option value="unpaid" {% if current_filters.status=='unpaid' %}selected{% endif %}>Unpaid
+                    </option>
+                    <option value="partial" {% if current_filters.status=='partial' %}selected{% endif %}>
+                        Partial
+                    </option>
+                    <option value="paid" {% if current_filters.status=='paid' %}selected{% endif %}>Paid
+                    </option>
+                </select>
+            </div>
+
+            <div style="width: 150px;">
+                <label
+                    style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--text-muted);">Type</label>
+                <select name="type"
+                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    <option value="">All Types</option>
+                    <option value="rent" {% if current_filters.type=='rent' %}selected{% endif %}>Rent</option>
+                    <option value="late_fee" {% if current_filters.type=='late_fee' %}selected{% endif %}>Late
+                        Fee
+                    </option>
+                    <option value="utility" {% if current_filters.type=='utility' %}selected{% endif %}>Utility
+                    </option>
+                    <option value="other" {% if current_filters.type=='other' %}selected{% endif %}>Other
+                    </option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="height: 42px;">Filter</button>
+            <a href="{{ url_for('billing.list_invoices') }}" class="btn"
+                style="height: 42px; background: transparent; border: 1px solid var(--glass-border);">Reset</a>
+        </form>
+
+        <button onclick="bulkDelete()" class="btn"
+            style="height: 42px; background: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2);">
+            <i class='bx bx-trash'></i> Delete Selected
+        </button>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="glass-card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align: left; border-bottom: 1px solid var(--glass-border);">
+                <th style="padding: 15px; width: 40px;">
+                    <input type="checkbox" id="selectAll" onclick="toggleAll(this)"
+                        style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                </th>
+                <th style="padding: 15px;">#</th>
+                <th style="padding: 15px;">Date</th>
+                <th style="padding: 15px;">Tenant</th>
+                <th style="padding: 15px;">Description</th>
+                <th style="padding: 15px;">Amount</th>
+                <th style="padding: 15px;">Status</th>
+                <th style="padding: 15px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 15px;">
+                    <input type="checkbox" class="invoice-select" value="{{ invoice.id }}"
+                        style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                </td>
+                <td style="padding: 15px; color: var(--text-muted);">#{{ invoice.id }}</td>
+                <td style="padding: 15px;">
+                    <div>{{ invoice.issue_date.strftime('%d %b %Y') }}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Due: {{
+                        invoice.due_date.strftime('%d %b') }}</div>
+                </td>
+                <td style="padding: 15px; font-weight: 500;">
+                    {{ invoice.tenant.name }}
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ invoice.tenant.account_code }}
+                    </div>
+                </td>
+                <td style="padding: 15px;">
+                    {{ invoice.description }}
+                    <!-- Show types if multiple? Or logic handled in query? -->
+                </td>
+                <td style="padding: 15px; font-weight: bold;">RM {{ "%.2f"|format(invoice.total_amount) }}</td>
+                <td style="padding: 15px;">
+                    <span style="padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; 
+                                {% if invoice.status == 'paid' %}background: rgba(16, 185, 129, 0.2); color: #34d399;
+                                {% elif invoice.status == 'partial' %}background: rgba(245, 158, 11, 0.2); color: #fbbf24;
+                                {% else %}background: rgba(239, 68, 68, 0.2); color: #fca5a5;{% endif %}">
+                        {{ invoice.status|upper }}
+                    </span>
+                </td>
+                <td style="padding: 15px;">
+                    <div style="display: flex; gap: 8px;">
+                        <a href="{{ url_for('billing.download_invoice_pdf', id=invoice.id) }}" class="btn-icon"
+                            style="color: var(--primary);" title="Download PDF">
+                            <i class='bx bxs-file-pdf'></i>
+                        </a>
+                        {% if invoice.status != 'paid' %}
+                        <a href="{{ url_for('billing.edit_invoice', id=invoice.id) }}" class="btn-icon"
+                            style="color: var(--text-main);" title="Edit">
+                            <i class='bx bx-edit'></i>
+                        </a>
+                        <button class="btn-icon" style="color: var(--error);" title="Delete"
+                            onclick="deleteInvoice({{ invoice.id }})">
+                            <i class='bx bx-trash'></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" style="padding: 30px; text-align: center; color: var(--text-muted);">
+                    No invoices found matching your filters.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+<script>
+    function toggleAll(source) {
+        const checkboxes = document.querySelectorAll('.invoice-select');
+        for (const cb of checkboxes) {
+            cb.checked = source.checked;
+        }
+    }
+
+    async function bulkDelete() {
+        const checkboxes = document.querySelectorAll('.invoice-select:checked');
+        const ids = Array.from(checkboxes).map(cb => cb.value);
+
+        if (ids.length === 0) {
+            alert('Please select at least one invoice.');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete ${ids.length} invoices? Valid paid invoices will be skipped.`)) return;
+
+        try {
+            const res = await fetch("{{ url_for('billing.bulk_delete_invoices') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ids })
+            });
+
+            const data = await res.json();
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Error deleting invoices');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('An error occurred.');
+        }
+    }
+
+    async function deleteInvoice(id) {
+        if (!confirm('Are you sure you want to delete this invoice?')) return;
+
+        try {
+            const res = await fetch(`/billing/invoice/${id}/delete`, { method: 'POST' });
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                alert('Error deleting invoice.');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('An error occurred.');
+        }
+    }
+</script>
+{% endblock %}

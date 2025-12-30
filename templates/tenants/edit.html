@@ -1,0 +1,309 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px; display: flex; align-items: center; gap: 15px;">
+    <a href="{{ url_for('tenants.list_tenants') }}" style="color: var(--text-muted); font-size: 1.5rem;"><i
+            class='bx bx-arrow-back'></i></a>
+    <h1>Edit Tenant: {{ tenant.name }}</h1>
+</header>
+
+<div class="glass-card" style="padding: 24px; max-width: 800px;">
+    <form action="{{ url_for('tenants.edit_tenant', id=tenant.id) }}" method="POST" enctype="multipart/form-data">
+
+        <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+            Tenant Details</h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" value="{{ tenant.name }}" required>
+            </div>
+            <div class="form-group">
+                <label>Account Code</label>
+                <input type="text" name="account_code" value="{{ tenant.account_code or '' }}">
+            </div>
+            <!-- New Fields Correction -->
+            <div class="form-group">
+                <label>Company Reg No (SSM)</label>
+                <input type="text" name="company_reg_no" value="{{ tenant.company_reg_no or '' }}">
+            </div>
+            <div class="form-group">
+                <label>Contact Person (PIC)</label>
+                <input type="text" name="contact_person" value="{{ tenant.contact_person or '' }}">
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" value="{{ tenant.email or '' }}">
+            </div>
+            <div class="form-group">
+                <label>Phone</label>
+                <input type="text" name="phone" value="{{ tenant.phone or '' }}">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select name="status"
+                    style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    <option value="active" {% if tenant.status=='active' %}selected{% endif %} style="color: black;">
+                        Active - Current Tenant</option>
+                    <option value="prospective" {% if tenant.status=='prospective' %}selected{% endif %}
+                        style="color: black;">Prospective - Lead/Interested</option>
+                    <option value="past" {% if tenant.status=='past' %}selected{% endif %} style="color: black;">Past -
+                        Previous Tenant</option>
+                </select>
+                <small style="color: var(--text-muted); display: block; margin-top: 5px;">
+                    💡 Active tenants must have an active lease
+                </small>
+            </div>
+        </div>
+
+        <!-- Billing & Tax Section -->
+        <h3
+            style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-top: 30px;">
+            Billing Address & Tax Compliance
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <!-- Column 1: Address -->
+            <div>
+                <h4 style="margin-bottom: 10px; color: var(--primary);">Billing Address</h4>
+                <div class="form-group">
+                    <label>Address Line 1</label>
+                    <input type="text" name="address_line_1" value="{{ tenant.address_line_1 or '' }}">
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>Address Line 2</label>
+                    <input type="text" name="address_line_2" value="{{ tenant.address_line_2 or '' }}">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" name="city" value="{{ tenant.city or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label>State</label>
+                        <input type="text" name="state" value="{{ tenant.state or '' }}">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>Postcode</label>
+                    <input type="text" name="postcode" value="{{ tenant.postcode or '' }}">
+                </div>
+            </div>
+
+            <!-- Column 2: Tax -->
+            <div>
+                <h4 style="margin-bottom: 10px; color: var(--primary);">Tax & E-Invoice</h4>
+                <div class="form-group" style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                    <input type="checkbox" name="is_sst_registered" id="is_sst" {% if tenant.is_sst_registered
+                        %}checked{% endif %} style="width: auto;">
+                    <label for="is_sst" style="margin: 0;">SST Registered?</label>
+                </div>
+                <div class="form-group">
+                    <label>SST Registration No.</label>
+                    <input type="text" name="sst_registration_number"
+                        value="{{ tenant.sst_registration_number or '' }}">
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>Tax Identification No. (TIN)</label>
+                    <input type="text" name="tax_identification_number"
+                        value="{{ tenant.tax_identification_number or '' }}">
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>MSIC Code</label>
+                    <input type="text" name="msic_code" value="{{ tenant.msic_code or '' }}">
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>Business Activity</label>
+                    <input type="text" name="business_activity" value="{{ tenant.business_activity or '' }}">
+                </div>
+            </div>
+        </div>
+
+        {% if lease %}
+        <h3
+            style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-top: 30px;">
+            Current Lease Details
+        </h3>
+        <input type="hidden" name="lease_id" value="{{ lease.id }}">
+        {% else %}
+        <h3
+            style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-top: 30px;">
+            Create New Lease
+        </h3>
+        <div class="alert alert-info">Enter details below to create a lease for this tenant.</div>
+        {% endif %}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label>Project</label>
+                <input type="text" name="project" value="{{ lease.project if lease else '' }}">
+            </div>
+            <div class="form-group">
+                <label>Unit Number</label>
+                <input type="text" name="unit_number" value="{{ lease.unit_number if lease else '' }}">
+            </div>
+            <div class="form-group">
+                <label>Rent Amount</label>
+                <input type="number" step="0.01" name="rent_amount" value="{{ lease.rent_amount if lease else '' }}"
+                    placeholder="Required to create lease">
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" name="start_date" value="{{ lease.start_date if lease else '' }}">
+            </div>
+            <div class="form-group">
+                <label>End Date</label>
+                <input type="date" name="end_date" value="{{ lease.end_date if lease else '' }}">
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label>Security Deposit</label>
+                <input type="number" step="0.01" name="security_deposit"
+                    value="{{ lease.security_deposit if lease else '' }}">
+            </div>
+            <div class="form-group">
+                <label>Utility Deposit</label>
+                <input type="number" step="0.01" name="utility_deposit"
+                    value="{{ lease.utility_deposit if lease else '' }}">
+            </div>
+            <div class="form-group">
+                <label>Misc Deposit</label>
+                <input type="number" step="0.01" name="misc_deposit" value="{{ lease.misc_deposit if lease else '' }}">
+            </div>
+
+            <!-- Agent Commission Section -->
+            <div
+                style="grid-column: span 3; margin-top: 15px; border-top: 1px dashed var(--glass-border); padding-top: 15px;">
+                <h4 style="margin-bottom: 10px; color: var(--primary);">Agent Commission</h4>
+                <div class="form-group" style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                    <input type="checkbox" name="has_agent" id="has_agent" style="width: auto;" {% if commission
+                        %}checked{% endif %}>
+                    <label for="has_agent" style="margin: 0; color: white;">Referred by Agent?</label>
+                </div>
+
+                <div id="agentFields"
+                    style="display: {{ 'grid' if commission else 'none' }}; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>Select Agent</label>
+                        <select name="agent_id"
+                            style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <option value="">-- Select Agent --</option>
+                            {% for agent in agents %}
+                            <option value="{{ agent.id }}" {% if commission and commission.agent_id==agent.id
+                                %}selected{% endif %}>{{ agent.name }} ({{ agent.company }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Commission Amount (RM)</label>
+                        <input type="number" step="0.01" name="commission_amount" placeholder="0.00"
+                            value="{{ commission.amount if commission else '' }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Agreement File (Upload to Replace: {{ lease.agreement_file if lease else 'None' }})</label>
+            <input type="file" name="agreement_file" accept=".pdf,.jpg,.png">
+        </div>
+
+        <div style="margin-top: 30px; display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="{{ url_for('tenants.list_tenants') }}" class="btn"
+                style="border: 1px solid var(--glass-border);">Cancel</a>
+        </div>
+
+    </form>
+
+    <script>
+        const agentCheckbox = document.getElementById('has_agent');
+        const agentFields = document.getElementById('agentFields');
+
+        agentCheckbox.addEventListener('change', function () {
+            if (this.checked) {
+                agentFields.style.display = 'grid';
+                agentFields.querySelector('select').setAttribute('required', 'true');
+                agentFields.querySelector('input').setAttribute('required', 'true');
+            } else {
+                agentFields.style.display = 'none';
+                agentFields.querySelector('select').removeAttribute('required');
+                agentFields.querySelector('input').removeAttribute('required');
+                // Optional: clear values? Better to keep them in case they uncheck by mistake.
+                // But if they submit unchecked, backend should handle removal.
+            }
+        });
+    </script>
+</div>
+
+<!-- Correspondence / Remark Log -->
+<div class="glass-card" style="padding: 24px; max-width: 800px; margin-top: 30px; margin-bottom: 50px;">
+    <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+        <i class='bx bx-notepad'></i> Correspondence Log (Clinic Card)
+    </h3>
+
+    <!-- Add Note Form -->
+    <form action="{{ url_for('tenants.add_note', id=tenant.id) }}" method="POST" enctype="multipart/form-data"
+        style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: 150px 1fr 200px auto; gap: 10px; align-items: end;">
+            <div class="form-group">
+                <label>Category</label>
+                <select name="category"
+                    style="padding: 8px; border-radius: 4px; background: var(--bg-card); color: white; border: 1px solid var(--glass-border);">
+                    <option value="General" style="background-color: #1f2937; color: white;">General</option>
+                    <option value="Complaint" style="background-color: #1f2937; color: white;">Complaint
+                    </option>
+                    <option value="Request" style="background-color: #1f2937; color: white;">Request</option>
+                    <option value="Notice" style="background-color: #1f2937; color: white;">Notice Sent</option>
+                    <option value="Payment" style="background-color: #1f2937; color: white;">Payment Issue
+                    </option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Note / Remark</label>
+                <input type="text" name="note" required placeholder="Write a remark..."
+                    style="padding: 8px; border-radius: 4px; background: var(--bg-card); color: white; border: 1px solid var(--glass-border);">
+            </div>
+            <div class="form-group">
+                <label>Attachment</label>
+                <input type="file" name="attachment" style="padding: 5px; color: var(--text-muted); font-size: 0.9rem;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="height: 38px;">Add Note</button>
+        </div>
+    </form>
+
+    <!-- Notes List -->
+    <div style="max-height: 400px; overflow-y: auto;">
+        {% if tenant.notes %}
+        {% for note in tenant.notes|sort(attribute='date', reverse=True) %}
+        <div
+            style="border-left: 3px solid {{ 'var(--error)' if note.category == 'Complaint' else 'var(--primary)' }}; padding: 10px 15px; background: rgba(255,255,255,0.03); margin-bottom: 10px; border-radius: 0 8px 8px 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <strong style="color: {{ '#f87171' if note.category == 'Complaint' else 'var(--text-main)' }}">{{
+                    note.category }}</strong>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">{{ note.date.strftime('%d %b %Y %I:%M %p')
+                    }}</span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: start; justify-content: space-between;">
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">{{ note.note }}</p>
+                {% if note.attachment %}
+                <a href="{{ url_for('static', filename='uploads/notes/' + note.attachment) }}" target="_blank"
+                    style="color: var(--primary); font-size: 0.85rem; display: flex; align-items: center; gap: 5px; white-space: nowrap;">
+                    <i class='bx bx-paperclip'></i> View Attachment
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="text-align: center; color: var(--text-muted); padding: 20px;">No remarks recorded yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

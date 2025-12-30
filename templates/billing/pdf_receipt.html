@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        @page {
+            size: A5 landscape;
+            /* Receipt format */
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: Helvetica, sans-serif;
+            color: #333;
+        }
+
+        .header {
+            border-bottom: 2px solid #10b981;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            /* xhtml2pdf has limited flex support, fallback to tables mostly safe but trying basic blocks */
+        }
+
+        .title {
+            color: #10b981;
+            font-size: 20pt;
+            font-weight: bold;
+        }
+
+        .meta {
+            text-align: right;
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+
+        .content {
+            margin-top: 1rem;
+            font-size: 12pt;
+            line-height: 1.5;
+        }
+
+        .amount-box {
+            margin-top: 1rem;
+            background: #f0fdf4;
+            border: 1px solid #10b981;
+            padding: 10px;
+            font-size: 16pt;
+            font-weight: bold;
+            color: #064e3b;
+            text-align: center;
+            width: 50%;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            font-size: 9pt;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="title">OFFICIAL RECEIPT</div>
+        <div class="meta">
+            <p>Receipt #: R-{{ receipt.id }}</p>
+            <p>Date: {{ receipt.date_received.strftime('%d %b %Y') }}</p>
+        </div>
+    </div>
+
+    <div class="content">
+        <p><strong>Received From:</strong> {{ receipt.invoice.tenant.name }}</p>
+
+        {% set active_lease = namespace(value=none) %}
+        {% for lease in receipt.invoice.tenant.leases %}
+        {% if lease.rent_amount > 0 %}{% set active_lease.value = lease %}{% endif %}
+        {% endfor %}
+        {% set lease = active_lease.value if active_lease.value else (receipt.invoice.tenant.leases[-1] if
+        receipt.invoice.tenant.leases else none) %}
+        {% if lease and lease.project %}
+        <p><strong>Project:</strong> {{ lease.project }} ({{ lease.unit_number }})</p>
+        {% endif %}
+
+        <p><strong>Payment For:</strong> Invoice #{{ receipt.invoice_id }} - {{ receipt.invoice.description }}</p>
+        <p><strong>Reference:</strong> {{ receipt.reference or 'N/A' }}</p>
+
+        <div class="amount-box">
+            RM {{ "%.2f"|format(receipt.amount) }}
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Received with thanks.</p>
+        <p>RentMonitor System Generated Receipt.</p>
+    </div>
+</body>
+
+</html>

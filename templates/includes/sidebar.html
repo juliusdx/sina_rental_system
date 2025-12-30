@@ -1,0 +1,46 @@
+<aside class="sidebar glass-card" style="border-radius: 0;">
+    <div class="logo-area" style="margin-bottom: 40px; padding: 0 10px;">
+        <h2 style="font-size: 1.4rem; color: #fff;">Sinaland Rent<span style="color: var(--primary);">Monitor</span>
+        </h2>
+    </div>
+
+    <nav>
+        <a href="{{ url_for('dashboard.index') }}"
+            class="nav-link {% if 'dashboard' in request.endpoint %}active{% endif %}">
+            <i class='bx bxs-dashboard'></i> Dashboard
+        </a>
+        <a href="{{ url_for('tenants.list_tenants') }}"
+            class="nav-link {% if 'tenants' in request.endpoint %}active{% endif %}">
+            <i class='bx bx-user'></i> Tenant Management
+        </a>
+        <a href="{{ url_for('properties.dashboard') }}"
+            class="nav-link {% if 'properties' in request.endpoint %}active{% endif %}">
+            <i class='bx bx-building-house'></i> Properties
+        </a>
+        <a href="{{ url_for('billing.dashboard') }}"
+            class="nav-link {% if 'billing' in request.endpoint %}active{% endif %}">
+            <i class='bx bx-money'></i> Billing & Charges
+        </a>
+        <a href="{{ url_for('agents.list_agents') }}"
+            class="nav-link {% if 'agents' in request.endpoint %}active{% endif %}">
+            <i class='bx bx-briefcase-alt-2'></i> Agents & Commissions
+        </a>
+        {% if current_user.role|lower == 'admin' %}
+        <!-- User Management Link - Force Reload -->
+        <a href="{{ url_for('auth.register_user') }}"
+            class="nav-link {% if 'register_user' in request.endpoint %}active{% endif %}">
+            <i class='bx bx-user-plus'></i> User Management
+        </a>
+        <a href="{{ url_for('auth.view_audit_logs') }}"
+            class="nav-link {% if 'audit' in request.endpoint %}active{% endif %}">
+            <i class='bx bx-shield-quarter'></i> Security & Audit
+        </a>
+        {% endif %}
+
+        <div style="margin-top: auto; padding-top: 40px;">
+            <a href="{{ url_for('auth.logout') }}" class="nav-link" style="color: var(--danger);">
+                <i class='bx bx-log-out'></i> Logout
+            </a>
+        </div>
+    </nav>
+</aside>

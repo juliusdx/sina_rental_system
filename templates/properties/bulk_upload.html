@@ -1,0 +1,69 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<div style="max-width: 800px; margin: 0 auto; padding-top: 40px;">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div>
+            <h2><i class='bx bx-cloud-upload'></i> Bulk Property Upload</h2>
+            <p style="color: var(--text-muted);">Upload multiple properties via Excel or CSV</p>
+        </div>
+        <a href="{{ url_for('properties.dashboard') }}" class="btn"
+            style="background: transparent; border: 1px solid var(--text-muted);">
+            <i class='bx bx-arrow-back'></i> Back
+        </a>
+    </div>
+
+    <div class="glass-card" style="padding: 30px;">
+        <div
+            style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 30px; border-bottom: 1px solid var(--glass-border); padding-bottom: 20px;">
+            <div>
+                <h3 style="margin-bottom: 10px;">Step 1: Get the Template</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Download our standardized Excel template to
+                    ensure your data is formatted correctly.</p>
+            </div>
+            <a href="{{ url_for('properties.download_template') }}" class="btn"
+                style="background: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid #34d399;">
+                <i class='bx bx-download'></i> Download Template
+            </a>
+        </div>
+
+        <div>
+            <h3 style="margin-bottom: 10px;">Step 2: Upload Your File</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+                Supported formats: .xlsx, .csv. <br>
+                <i style="color: #f87171;">Note: Existing Unit Numbers will be skipped.</i>
+            </p>
+
+            <form action="{{ url_for('properties.bulk_upload') }}" method="POST" enctype="multipart/form-data">
+                <div style="border: 2px dashed var(--glass-border); border-radius: 12px; padding: 40px; text-align: center; margin-bottom: 20px; transition: all 0.2s;"
+                    id="dropZone">
+                    <i class='bx bx-file' style="font-size: 3rem; color: var(--text-muted); margin-bottom: 10px;"></i>
+                    <p style="margin-bottom: 20px;">Drag and drop your file here, or click to browse</p>
+                    <input type="file" name="file" id="fileInput" accept=".xlsx, .csv" style="display: none;"
+                        onchange="updateFileName(this)">
+                    <button type="button" onclick="document.getElementById('fileInput').click()"
+                        class="btn btn-primary">Browse Files</button>
+                    <p id="fileName" style="margin-top: 15px; color: var(--success); font-weight: bold;"></p>
+                </div>
+
+                <div style="text-align: right;">
+                    <button type="submit" class="btn btn-primary" style="padding: 10px 30px;">
+                        <i class='bx bx-cloud-upload'></i> Upload Properties
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateFileName(input) {
+        if (input.files && input.files.length > 0) {
+            document.getElementById('fileName').innerHTML = `<i class='bx bx-check'></i> ${input.files[0].name}`;
+        }
+    }
+
+    // Optional: Add drag and drop handling here if desired
+</script>
+{% endblock %}

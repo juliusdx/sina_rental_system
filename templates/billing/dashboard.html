@@ -1,0 +1,491 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1>Billing Overview</h1>
+        <p style="color: var(--text-muted);">Manage invoices, receipts, and recurring charges.</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-primary" onclick="window.location='{{ url_for('billing.create_custom') }}'">Create
+            Invoice</button>
+        <button class="btn" onclick="window.location='{{ url_for('billing.aging_report') }}'"
+            style="background: transparent; border: 1px solid var(--glass-border); color: #fff;">
+            <i class='bx bx-time-five'></i> Aging Report
+        </button>
+        <a href="{{ url_for('billing.receipts') }}" class="btn"
+            style="background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white !important;">
+            <i class='bx bx-receipt'></i> View Receipts
+        </a>
+    </div>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert" style="margin-bottom: 20px; padding: 15px; border-radius: 8px; font-weight: 500;
+                        {% if category == 'warning' %}
+                        background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);
+                        {% elif category == 'error' %}
+                        background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);
+                        {% else %}
+                        background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);
+                        {% endif %}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<!-- Financial Overview -->
+<div style="display: grid; grid-template-columns: 350px 1fr; gap: 20px; margin-bottom: 40px;">
+    <!-- Stats Column -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <!-- Total Outstanding -->
+        <div class="glass-card" style="padding: 24px; border-left: 4px solid #f87171;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div
+                    style="width: 40px; height: 40px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); display: flex; align-items: center; justify-content: center; color: #f87171;">
+                    <i class='bx bx-trending-up'></i>
+                </div>
+                <h3 style="font-size: 1rem; color: var(--text-muted);">Total Outstanding</h3>
+            </div>
+            <h2 style="font-size: 2rem; margin-bottom: 5px;">RM {{ "%.2f"|format(stats.outstanding) }}</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">From {{ stats.debtors_count }} tenants</p>
+        </div>
+
+        <!-- Quick Action: Late Fees -->
+        <a href="{{ url_for('billing.prepare_late_fees') }}" class="glass-card"
+            style="padding: 20px; display: flex; align-items: center; justify-content: space-between; text-decoration: none; color: inherit; transition: transform 0.2s;">
+            <style>
+                .glass-card:hover {
+                    transform: translateY(-3px);
+                }
+            </style>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div
+                    style="width: 40px; height: 40px; border-radius: 10px; background: rgba(245, 158, 11, 0.2); display: flex; align-items: center; justify-content: center; color: #fbbf24;">
+                    <i class='bx bx-time-five'></i>
+                </div>
+                <div>
+                    <h4 style="margin: 0;">Review Late Fees</h4>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Check overdue penalties
+                    </p>
+                </div>
+            </div>
+            <i class='bx bx-chevron-right' style="font-size: 1.5rem; color: var(--text-muted);"></i>
+        </a>
+    </div>
+
+    <!-- Top Debtors Table -->
+    <div class="glass-card" style="padding: 0; display: flex; flex-direction: column; max-height: 400px;">
+        <div
+            style="padding: 20px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1.1rem; margin: 0;">Top Outstanding Balances</h3>
+            <span
+                style="font-size: 0.8rem; padding: 4px 8px; background: rgba(239, 68, 68, 0.2); color: #f87171; border-radius: 6px;">
+                {{ stats.debtors_count }} Tenants Owing
+            </span>
+        </div>
+        <div style="overflow-y: auto; flex: 1;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead style="background: rgba(0,0,0,0.2); position: sticky; top: 0;">
+                    <tr>
+                        <th style="text-align: left; padding: 12px 20px; font-size: 0.85rem; color: var(--text-muted);">
+                            Tenant</th>
+                        <th
+                            style="text-align: right; padding: 12px 20px; font-size: 0.85rem; color: var(--text-muted);">
+                            Balance</th>
+                        <th style="padding: 12px 20px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for debtor in debtors %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                        <td style="padding: 12px 20px;">
+                            <div style="font-weight: 500;">{{ debtor.name }}</div>
+                        </td>
+                        <td style="padding: 12px 20px; text-align: right; font-weight: bold; color: #f87171;">
+                            RM {{ "%.2f"|format(debtor.balance) }}
+                        </td>
+                        <td style="padding: 12px 20px; text-align: right;">
+                            <a href="{{ url_for('billing.tenant_statement', tenant_id=debtor.id) }}" class="btn-icon"
+                                title="View Statement">
+                                <i class='bx bx-list-ul'></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" style="padding: 30px; text-align: center; color: var(--text-muted);">
+                            <i class='bx bx-check-circle'
+                                style="font-size: 2rem; color: #34d399; margin-bottom: 10px; display: block;"></i>
+                            All tenants are paid up!
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Action Cards -->
+<h3
+    style="margin-bottom: 15px; color: var(--text-muted); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">
+    Quick Actions</h3>
+<div
+    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px;">
+
+    <!-- Bulk Rent -->
+    <div class="glass-card" style="padding: 24px; display: flex; flex-direction: column; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div
+                style="width: 50px; height: 50px; border-radius: 12px; background: rgba(59, 130, 246, 0.2); display: flex; align-items: center; justify-content: center; color: #60a5fa; font-size: 1.5rem;">
+                <i class='bx bxs-building-house'></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1.1rem;">Monthly Rent Run</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Generate invoices for all active
+                    tenants.</p>
+            </div>
+        </div>
+        <button onclick="openRentModal()" class="btn btn-primary" style="margin-top: auto; width: 100%;">
+            Generate Rent Invoices
+        </button>
+    </div>
+
+    <!-- Custom Invoice -->
+    <div class="glass-card" style="padding: 24px; display: flex; flex-direction: column; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div
+                style="width: 50px; height: 50px; border-radius: 12px; background: rgba(16, 185, 129, 0.2); display: flex; align-items: center; justify-content: center; color: #34d399; font-size: 1.5rem;">
+                <i class='bx bx-plus-circle'></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1.1rem;">Custom Invoice</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Ad-hoc charges (Water, Electricity,
+                    etc.).</p>
+            </div>
+        </div>
+        <a href="{{ url_for('billing.create_custom') }}" class="btn btn-primary"
+            style="margin-top: auto; text-align: center;">
+            Create New Invoice
+        </a>
+    </div>
+
+    <!-- Late Fees (Moved to Financial Overview) -->
+</div>
+
+<!-- Recent Invoices List -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h3>Recent Invoices</h3>
+    <button id="bulkDeleteBtn" onclick="bulkDelete()" class="btn"
+        style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); display: none;">
+        <i class='bx bx-trash'></i> Delete Selected (<span id="selectedCount">0</span>)
+    </button>
+</div>
+
+<div class="glass-card" style="padding: 0;">
+    <table style="width: 100%; border-collapse: collapse; color: var(--text-main);">
+        <thead>
+            <tr style="text-align: left; border-bottom: 1px solid var(--glass-border);">
+                <th style="padding: 20px; width: 40px;">
+                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+                </th>
+                <th style="padding: 20px;">Issue Date</th>
+                <th style="padding: 20px;">Invoice #</th>
+                <th style="padding: 20px;">Tenant</th>
+                <th style="padding: 20px;">Project</th>
+                <th style="padding: 20px;">Unit</th>
+                <th style="padding: 20px;">Description</th>
+                <th style="padding: 20px;">Amount</th>
+                <th style="padding: 20px;">Status</th>
+                <th style="padding: 20px;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                <td style="padding: 20px;">
+                    <input type="checkbox" class="invoice-checkbox" value="{{ invoice.id }}"
+                        onchange="updateBulkDeleteUI()" {% if invoice.status=='paid' %}disabled
+                        title="Paid invoices cannot be deleted" {% endif %}>
+                </td>
+                <td style="padding: 20px;">{{ invoice.issue_date.strftime('%d %b %Y') }}</td>
+                <td style="padding: 20px; font-family: monospace;">#{{ invoice.id }}</td>
+                <td style="padding: 20px; font-weight: 500;">
+                    {{ invoice.tenant.name }}
+                </td>
+                <td style="padding: 20px;">
+                    {# Project #}
+                    {% set active_lease = namespace(value=none) %}
+                    {% if invoice.tenant.leases %}
+                    {% for lease in invoice.tenant.leases %}
+                    {% if lease.rent_amount > 0 %}
+                    {% set active_lease.value = lease %}
+                    {% endif %}
+                    {% endfor %}
+                    {% set lease = active_lease.value if active_lease.value else invoice.tenant.leases[-1] %}
+                    <span style="color: var(--primary);">{{ lease.project }}</span>
+                    {% else %}
+                    <span style="color: var(--text-muted);">-</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 20px;">
+                    {# Unit #}
+                    {% set active_lease = namespace(value=none) %}
+                    {% if invoice.tenant.leases %}
+                    {% for lease in invoice.tenant.leases %}
+                    {% if lease.rent_amount > 0 %}
+                    {% set active_lease.value = lease %}
+                    {% endif %}
+                    {% endfor %}
+                    {% set lease = active_lease.value if active_lease.value else invoice.tenant.leases[-1] %}
+                    <span style="color: var(--text-muted);">{{ lease.unit_number }}</span>
+                    {% else %}
+                    <span style="color: var(--text-muted);">-</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 20px; font-size: 0.9rem; color: var(--text-muted);">{{ invoice.description
+                    }}</td>
+                <td style="padding: 20px; font-weight: bold;">RM {{ "%.2f"|format(invoice.total_amount) }}</td>
+                <td style="padding: 20px;">
+                    <span
+                        style="padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; 
+                                background: {% if invoice.status == 'paid' %}rgba(16, 185, 129, 0.2){% elif invoice.status == 'partial' %}rgba(245, 158, 11, 0.2){% else %}rgba(255, 255, 255, 0.1){% endif %}; 
+                                color: {% if invoice.status == 'paid' %}#34d399{% elif invoice.status == 'partial' %}#fbbf24{% else %}#9ca3af{% endif %};">
+                        {{ invoice.status.upper() }}
+                    </span>
+                </td>
+                <td style="padding: 20px; display: flex; gap: 10px;">
+                    <a href="{{ url_for('billing.tenant_statement', tenant_id=invoice.tenant_id) }}" class="btn-icon"
+                        style="color: var(--primary);" title="View Statement">
+                        <i class='bx bx-list-ul'></i>
+                    </a>
+                    <a href="{{ url_for('billing.download_invoice_pdf', id=invoice.id) }}" class="btn-icon"
+                        style="color: var(--primary);" title="Download Invoice">
+                        <i class='bx bxs-file-pdf'></i>
+                    </a>
+                    {% if invoice.status != 'paid' %}
+                    <a href="{{ url_for('billing.edit_invoice', id=invoice.id) }}" class="btn-icon"
+                        style="color: var(--text-main);" title="Edit Invoice">
+                        <i class='bx bxs-edit'></i>
+                    </a>
+                    <button class="btn-icon" style="color: var(--primary);" title="Mark Paid"
+                        onclick="openPaymentModal({{ invoice.id }}, {{ invoice.total_amount }})">
+                        <i class='bx bx-dollar-circle'></i>
+                    </button>
+                    <button class="btn-icon" style="color: var(--error);" title="Delete Invoice"
+                        onclick="deleteInvoice({{ invoice.id }})">
+                        <i class='bx bx-trash'></i>
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" style="padding: 40px; text-align: center; color: var(--text-muted);">
+                    No invoices generated yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+
+<!-- Rent Generation Modal -->
+<div id="rentModal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;">
+    <div class="glass-card" style="padding: 30px; width: 400px; max-width: 90%;">
+        <h3 style="margin-bottom: 20px;">Generate Monthly Rent</h3>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">Select the billing period for the new invoices.
+        </p>
+
+        <form action="{{ url_for('billing.generate_rent') }}" method="POST">
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label>Billing Period (Month/Year)</label>
+                <input type="month" name="target_date" id="rent_period" required
+                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closeRentModal()" class="btn"
+                    style="background: transparent;">Cancel</button>
+                <button type="submit" class="btn btn-primary">Generate Invoices</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;">
+    <div class="glass-card" style="padding: 30px; width: 400px; max-width: 90%;">
+        <h3 style="margin-bottom: 20px;">Record Payment</h3>
+        <form id="paymentForm">
+            <input type="hidden" name="invoice_id" id="pay_invoice_id">
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label>Amount (RM)</label>
+                <input type="number" step="0.01" name="amount" id="pay_amount" required
+                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label>Date Received</label>
+                <input type="date" name="date" id="pay_date" required
+                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label>Reference (Cheque # / Transfer ID / Receipt #)</label>
+                <input type="text" name="reference" placeholder="Optional"
+                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closePaymentModal()" class="btn"
+                    style="background: transparent;">Cancel</button>
+                <button type="submit" class="btn btn-primary">Confirm Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+<script>
+    function openRentModal() {
+        const today = new Date();
+        const day = today.getDate();
+
+        let targetMonth = today.getMonth(); // 0-11
+        let targetYear = today.getFullYear();
+
+        // Logic: If After 7th -> Default to Next Month
+        if (day > 7) {
+            targetMonth += 1;
+            if (targetMonth > 11) {
+                targetMonth = 0;
+                targetYear += 1;
+            }
+        }
+
+        // Format YYYY-MM
+        const monthStr = String(targetMonth + 1).padStart(2, '0');
+        const defaultVal = `${targetYear}-${monthStr}`;
+
+        document.getElementById('rent_period').value = defaultVal;
+        document.getElementById('rentModal').style.display = 'flex';
+    }
+
+    function closeRentModal() {
+        document.getElementById('rentModal').style.display = 'none';
+    }
+
+    function openPaymentModal(invoiceId, amount) {
+        document.getElementById('pay_invoice_id').value = invoiceId;
+        document.getElementById('pay_amount').value = parseFloat(amount).toFixed(2);
+        document.getElementById('pay_date').valueAsDate = new Date();
+        document.getElementById('paymentModal').style.display = 'flex';
+    }
+
+    function closePaymentModal() {
+        document.getElementById('paymentModal').style.display = 'none';
+    }
+
+    document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            invoice_id: document.getElementById('pay_invoice_id').value,
+            amount: e.target.amount.value,
+            date: e.target.date.value,
+            reference: e.target.reference.value
+        };
+
+        const res = await fetch("{{ url_for('billing.receive_payment') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+            location.reload();
+        } else {
+            alert('Error recording payment');
+        }
+    });
+
+    async function deleteInvoice(id) {
+        if (!confirm('Are you sure you want to delete this invoice? This cannot be undone.')) return;
+
+        try {
+            const res = await fetch(`/billing/invoice/${id}/delete`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+
+            if (res.ok && data.status === 'success') {
+                location.reload();
+            } else {
+                alert(data.message || 'Error deleting invoice');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('An error occurred');
+        }
+    }
+
+    // Bulk Delete Logic
+    function toggleSelectAll(source) {
+        const checkboxes = document.querySelectorAll('.invoice-checkbox:not([disabled])');
+        for (const checkbox of checkboxes) {
+            checkbox.checked = source.checked;
+        }
+        updateBulkDeleteUI();
+    }
+
+    function updateBulkDeleteUI() {
+        const checkboxes = document.querySelectorAll('.invoice-checkbox:checked');
+        const count = checkboxes.length;
+        document.getElementById('selectedCount').innerText = count;
+
+        const btn = document.getElementById('bulkDeleteBtn');
+        if (count > 0) {
+            btn.style.display = 'block';
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    async function bulkDelete() {
+        const checkboxes = document.querySelectorAll('.invoice-checkbox:checked');
+        const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+        if (ids.length === 0) return;
+
+        if (!confirm(`Are you sure you want to delete ${ids.length} selected invoices? This cannot be undone.`)) return;
+
+        try {
+            const res = await fetch("{{ url_for('billing.bulk_delete_invoices') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ids })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                location.reload();
+            } else {
+                alert(data.message || 'Error deleting invoices');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('An error occurred');
+        }
+    }
+</script>
+{% endblock %}
