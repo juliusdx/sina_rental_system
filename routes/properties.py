@@ -3,7 +3,10 @@ from models import db, Property, Lease, Tenant, Project, Invoice, Receipt, Tenan
 from datetime import date, datetime
 import os
 import io
-import pandas as pd
+import csv
+import openpyxl
+from openpyxl import Workbook
+
 from werkzeug.utils import secure_filename
 from flask_login import login_required
 from utils import log_audit
@@ -407,31 +410,31 @@ def add_project():
 @properties_bp.route('/download_template')
 @login_required
 def download_template():
-    # Create a DataFrame with sample data
-    data = {
-        'Unit Number': ['MP2-G-0-9', ''], # Example of manually provided or empty (to be auto-generated)
-        'Project': ['MP2', 'Sunrise Towers'],
-        'Block': ['G', 'A'],
-        'Floor': ['0', '1'],
-        'Unit': ['9', '01'],
-        'Type': ['Shop', 'Apartment'],
-        'Category': ['Commercial', 'Residential'],
-        'Position': ['Intermediate', 'Corner'],
-        'Size (sqft)': [1200, 850],
-        'Target Rent': [2500, 1800],
-        'Bedrooms': [0, 3],
-        'Bathrooms': [1, 2],
-        'Furnishing': ['', 'Partially Furnished'],
-        'Description': ['Nice frontage', 'Near lift'],
-        'Status': ['vacant', 'maintenance'],
-        'Notes': ['Corner unit', 'Pool view']
-    }
-    df = pd.DataFrame(data)
+    # Create a Workbook using openpyxl
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Template"
+    
+    # Define headers
+    headers = [
+        'Unit Number', 'Project', 'Block', 'Floor', 'Unit', 'Type', 
+        'Category', 'Position', 'Size (sqft)', 'Target Rent', 
+        'Bedrooms', 'Bathrooms', 'Furnishing', 'Description', 'Status', 'Notes'
+    ]
+    ws.append(headers)
+    
+    # Add sample data rows
+    sample_data = [
+        ['MP2-G-0-9', 'MP2', 'G', '0', '9', 'Shop', 'Commercial', 'Intermediate', 1200, 2500, 0, 1, '', 'Nice frontage', 'vacant', 'Corner unit'],
+        ['', 'Sunrise Towers', 'A', '1', '01', 'Apartment', 'Residential', 'Corner', 850, 1800, 3, 2, 'Partially Furnished', 'Near lift', 'maintenance', 'Pool view']
+    ]
+    
+    for row in sample_data:
+        ws.append(row)
     
     # Save to buffer
     output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Template')
+    wb.save(output)
     output.seek(0)
     
     response = make_response(output.getvalue())

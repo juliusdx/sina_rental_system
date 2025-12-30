@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, send_file, make_response, jsonify
 from models import db, Tenant, Lease, Property
-import pandas as pd
+import csv
+import openpyxl
+from openpyxl import Workbook
 import io
 from flask_login import login_required, current_user
 from routes.auth import role_required
@@ -459,58 +461,51 @@ def download_template():
     import tempfile
     import os
     
-    # Columns matching 'Rental Source.xlsx' (Row 3 headers inferred)
+    # Create Workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Rent Listing"
+
+    # Columns matching 'Rental Source.xlsx'
     columns = ['Account Code', 'project', 'floor', 'lot', 'Agreement status', 'Tenant Name', 
                'Security', 'Utility', 'MISC', 'Rent RM', 'Start Date', 'End Date']
     
-    df = pd.DataFrame(columns=columns)
+    ws.append(columns)
+
     # Example Row
-    df.loc[0] = ['3060/G02', 'MISC', 'G', '02', 'active', 'EXAMPLE TENANT SDN BHD', 
-                 2000, 1000, 0, 3000, '2024-01-01', '2025-01-01']
+    ws.append(['3060/G02', 'MISC', 'G', '02', 'active', 'EXAMPLE TENANT SDN BHD', 
+               2000, 1000, 0, 3000, '2024-01-01', '2025-01-01'])
     
-    # Create a temporary file
-    temp_file = tempfile.NamedTemporaryFile(mode='wb', suffix='.xlsx', delete=False)
-    temp_filename = temp_file.name
-    temp_file.close()
+    # Save to buffer
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
     
-    # Write Excel to temp file
-    with pd.ExcelWriter(temp_filename, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Rent Listing')
-    
-    # Send file - try both parameter names for compatibility
+    # Send file
     try:
-        # Try newer Flask (2.0+)
         response = send_file(
-            temp_filename,
+            output,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
             download_name='rental_source_template.xlsx'
         )
+        return response
     except TypeError:
-        # Fall back to older Flask (1.x)
+        # Fallback for old Flask
         response = send_file(
-            temp_filename,
+            output,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
             attachment_filename='rental_source_template.xlsx'
         )
-    
-    # Clean up temp file after sending
-    @response.call_on_close
-    def cleanup():
-        try:
-            os.unlink(temp_filename)
-        except:
-            pass
-    
-    return response
+        return response
 
 def clean_numeric(value):
     """
     Clean numeric value by removing non-numeric characters (except . and -)
     Returns float or 0.0 if invalid
     """
-    if pd.isna(value):
+    if value is None:
         return 0.0
     
     # Convert to string
@@ -541,39 +536,59 @@ def import_tenants():
         return redirect(url_for('tenants.list_tenants'))
 
     try:
-        # Determine header row: The user file has headers on Row 3 (index 3) based on inspection
-        # But for CSV it might be 0. We'll try to detect or enforce.
-        # Logic: If 'Account Code' is in row 3, use header=3.
-        
+        data_rows = []
+        headers = []
+
         if file.filename.endswith('.csv'):
-            df = pd.read_csv(file, dtype=str)  # Read all as strings to avoid conversion errors
+            stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+            csv_reader = csv.DictReader(stream)
+            headers = csv_reader.fieldnames
+            data_rows = list(csv_reader)
         else:
-            # We assume the specific format provided
-            # Read first few rows to find header
-            preview = pd.read_excel(file, header=None, nrows=10, dtype=str)
-            header_row = 0
-            for i, row in preview.iterrows():
-                # Check for key columns
-                row_str = row.astype(str).tolist()
-                if 'Account Code' in row_str or 'Tenant Name' in row_str:
-                    header_row = i
+            # Handle Excel with openpyxl
+            wb = openpyxl.load_workbook(file)
+            ws = wb.active
+            rows = list(ws.rows)
+            
+            # Find header row with naive approach
+            header_idx = 0
+            for i, row in enumerate(rows[:20]): # Check first 20 rows
+                vals = [str(c.value) for c in row if c.value]
+                if 'Account Code' in vals or 'Tenant Name' in vals:
+                    header_idx = i
                     break
             
-            file.seek(0) # Reset file pointer
-            df = pd.read_excel(file, header=header_row, dtype=str)  # Read all as strings
+            # Extract headers
+            headers = [cell.value for cell in rows[header_idx] if cell.value]
             
+            # Map rows
+            for row in rows[header_idx+1:]:
+                row_data = {}
+                # Create a simple mapping based on index
+                current_col = 0
+                for cell in row:
+                    if current_col < len(headers):
+                        header = headers[current_col]
+                        row_data[header] = cell.value
+                    current_col += 1
+                data_rows.append(row_data)
+
         success_count = 0
         errors = []
         
-        for index, row in df.iterrows():
+        for index, row in enumerate(data_rows):
             try:
+                # Helper
+                def get_val(key, default=None):
+                    v = row.get(key)
+                    return v if v is not None else default
+
                 # 1. Tenant Name
-                name = row.get('Tenant Name')
-                if not name or pd.isna(name): continue
+                name = get_val('Tenant Name')
+                if not name: continue # Skip if no name
 
                 # 2. Account Code / ID
-                acct_code = row.get('Account Code')
-                if pd.isna(acct_code): acct_code = None
+                acct_code = get_val('Account Code')
                 
                 # Check duplicates by Account Code or Name
                 existing = None
@@ -583,23 +598,27 @@ def import_tenants():
                     existing = Tenant.query.filter_by(name=name).first() # Fallback
                 
                 if existing:
-                    # Update or Skip? For now, we update basic info if needed or skip
-                    # errors.append(f"Skipped {name}: Already exists")
                     tenant = existing
                 else:
                     tenant = Tenant(
                         name=name,
                         account_code=str(acct_code) if acct_code else None,
-                        status=row.get('Agreement status', 'active')
+                        status=get_val('Agreement status', 'active')
                     )
                     db.session.add(tenant)
                     db.session.flush()
 
                 # 3. Create Lease
                 # Construct Unit Number
-                proj = str(row.get('project', '')) if not pd.isna(row.get('project')) else ''
-                floor = str(row.get('floor', '')) if not pd.isna(row.get('floor')) else ''
-                lot = str(row.get('lot', '')) if not pd.isna(row.get('lot')) else ''
+                proj = str(get_val('project', ''))
+                floor = str(get_val('floor', ''))
+                lot = str(get_val('lot', ''))
+                
+                # Clean unit number parts
+                if floor == 'None': floor = ''
+                if lot == 'None': lot = ''
+                if proj == 'None': proj = ''
+                
                 unit_no = f"{floor}-{lot}".strip('-')
                 if not unit_no and acct_code: 
                     unit_no = str(acct_code)
@@ -608,62 +627,47 @@ def import_tenants():
                         cleaned = unit_no[len(proj):].strip('/- ')
                         if cleaned: unit_no = cleaned
 
-                start_date = row.get('Start Date')
-                end_date = row.get('End Date')
+                # Create dates - handling openpyxl datetime objects or strings
+                def parse_date(d):
+                    if not d: return None
+                    if isinstance(d, (datetime, date)): return d
+                    try:
+                        return datetime.strptime(str(d), '%Y-%m-%d').date()
+                    except:
+                        try:
+                            return datetime.strptime(str(d), '%d/%m/%Y').date()
+                        except:
+                            return None
+
+                start_date = parse_date(get_val('Start Date'))
+                end_date = parse_date(get_val('End Date'))
                 
                 # Default dates if missing
                 from datetime import date
-                # Create Lease (Always create if tenant exists, as this is a master list)
-                # Logic: Check if we have enough info for a unit number or project
-                proj = str(row.get('project', '')) if not pd.isna(row.get('project')) else ''
-                floor = str(row.get('floor', '')) if not pd.isna(row.get('floor')) else ''
-                lot = str(row.get('lot', '')) if not pd.isna(row.get('lot')) else ''
+                if not start_date: start_date = date.today() 
+                if not end_date: end_date = date.today().replace(year=date.today().year + 1)
+ 
+                # Smart Linking
+                # 1. Try exact match
+                prop_obj = Property.query.filter_by(unit_number=unit_no).first()
                 
-                # Construct Unit Number
-                # Construct Unit Number
-                unit_no = f"{floor}-{lot}".strip('-')
-                if unit_no == "--": unit_no = ""
-                
-                if not unit_no and acct_code: 
-                    unit_no = str(acct_code)
-                    # Try to clean project prefix from acct code if present
-                    # e.g. LEM/B7-3 -> B7-3 given Project=LEM
-                    # Heuristic: Match project roughly
-                    if proj and unit_no.upper().startswith(proj.upper()):
-                         cleaned = unit_no[len(proj):].strip('/- ')
-                         if cleaned: unit_no = cleaned
+                # 2. Try Prefix Match (Smart Link)
+                if not prop_obj and proj and unit_no:
+                    candidate = f"{proj}-{unit_no}"
+                    prop_obj = Property.query.filter_by(unit_number=candidate).first()
+                    
+                # If found, use its canonical data
+                prop_id = None
+                if prop_obj:
+                    prop_id = prop_obj.id
+                    unit_no = prop_obj.unit_number # Canonical name
+                    # Update status
+                    if end_date >= date.today():
+                        prop_obj.status = 'occupied'
 
-                if unit_no or proj: # Only create lease if we have some property info
+                # Only create lease if we have some property info
+                if unit_no or proj:
                     try:
-                        start_date = row.get('Start Date')
-                        end_date = row.get('End Date')
-                        
-                        # Default dates if missing
-                        from datetime import date
-                        if pd.isna(start_date): start_date = date.today() 
-                        else: start_date = pd.to_datetime(start_date).date()
-                        
-                        if pd.isna(end_date): end_date = date.today().replace(year=date.today().year + 1)
-                        else: end_date = pd.to_datetime(end_date).date()
-
-                        # SMART LINKING LOGIC
-                        # 1. Try exact match
-                        prop_obj = Property.query.filter_by(unit_number=unit_no).first()
-                        
-                        # 2. Try Prefix Match (Smart Link)
-                        if not prop_obj and proj and unit_no:
-                            candidate = f"{proj}-{unit_no}"
-                            prop_obj = Property.query.filter_by(unit_number=candidate).first()
-                            
-                        # If found, use its canonical data
-                        prop_id = None
-                        if prop_obj:
-                            prop_id = prop_obj.id
-                            unit_no = prop_obj.unit_number # Canonical name
-                            # Update status
-                            if end_date >= date.today():
-                                prop_obj.status = 'occupied'
-
                         lease = Lease(
                             tenant_id=tenant.id,
                             property_id=prop_id, # LINKED!
@@ -671,10 +675,10 @@ def import_tenants():
                             unit_number=unit_no,
                             start_date=start_date,
                             end_date=end_date,
-                            rent_amount=clean_numeric(row.get('Rent RM', 0)),
-                            security_deposit=clean_numeric(row.get('Security', 0)),
-                            utility_deposit=clean_numeric(row.get('Utility', 0)),
-                            misc_deposit=clean_numeric(row.get('MISC', 0))
+                            rent_amount=clean_numeric(get_val('Rent RM', 0)),
+                            security_deposit=clean_numeric(get_val('Security', 0)),
+                            utility_deposit=clean_numeric(get_val('Utility', 0)),
+                            misc_deposit=clean_numeric(get_val('MISC', 0))
                         )
                         db.session.add(lease)
                         success_count += 1
