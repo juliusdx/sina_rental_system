@@ -466,41 +466,75 @@ def bulk_upload():
             
         if file:
             try:
+                # 1. Parse File
+                data_rows = []
+                headers = []
+                
                 if file.filename.endswith('.csv'):
-                    df = pd.read_csv(file)
+                    # Handle CSV
+                    stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+                    csv_reader = csv.DictReader(stream)
+                    headers = csv_reader.fieldnames
+                    data_rows = list(csv_reader)
                 else:
+                    # Handle Excel
                     if not openpyxl:
-                        flash('Server Error: "openpyxl" library not installed. Please contact admin.', 'error')
+                        flash('Server Error: "openpyxl" library not installed.', 'error')
                         return redirect(request.url)
-                    df = pd.read_excel(file)
+                        
+                    wb = openpyxl.load_workbook(file)
+                    ws = wb.active
                     
+                    rows = list(ws.rows)
+                    if not rows:
+                        flash('Empty file', 'error')
+                        return redirect(request.url)
+                        
+                    # Get headers
+                    headers = [cell.value for cell in rows[0]]
+                    
+                    # Map rows
+                    for row in rows[1:]:
+                        row_data = {}
+                        for idx, cell in enumerate(row):
+                            if idx < len(headers):
+                                header = headers[idx]
+                                row_data[header] = cell.value
+                        data_rows.append(row_data)
+
                 added_count = 0
                 skipped_count = 0
                 
-                for _, row in df.iterrows():
+                for row in data_rows:
+                    # Helper
+                    def get_val(key, default=''):
+                        v = row.get(key)
+                        if v is None: return default
+                        return str(v).strip()
+
                     # 1. Extract Components
-                    proj_name = str(row.get('Project', '')).strip()
-                    block = str(row.get('Block', '')).strip()
-                    floor = str(row.get('Floor', '')).strip()
-                    unit_val = str(row.get('Unit', '')).strip()
+                    proj_name = get_val('Project')
+                    block = get_val('Block')
+                    floor = get_val('Floor')
+                    unit_val = get_val('Unit')
                     
                     if block == 'nan': block = ''
                     if floor == 'nan': floor = ''
                     if unit_val == 'nan': unit_val = ''
                     if proj_name == 'nan': proj_name = ''
                     
-                    # 2. Determine Unit Number (Universal ID)
-                    unit_number = str(row.get('Unit Number', '')).strip()
+                    # 2. Determine Unit Number
+                    unit_number = get_val('Unit Number')
                     if unit_number == 'nan': unit_number = ''
                     
-                    # If Unit Number invalid/missing, try to construct it
+                    # Construct if missing
                     if not unit_number and (unit_val or floor):
                         parts = [p for p in [proj_name, block, floor, unit_val] if p]
                         if parts:
                             unit_number = "-".join(parts)
                     
                     if not unit_number:
-                        continue # Skip invalid row
+                        continue 
                         
                     # Check duplicate
                     if Property.query.filter_by(unit_number=unit_number).first():
@@ -510,65 +544,54 @@ def bulk_upload():
                     # Handle Project Linking
                     project_id = None
                     if proj_name:
-                        # Case insensitive check
                         existing_proj = Project.query.filter(Project.name.ilike(proj_name)).first()
                         if existing_proj:
                             project_id = existing_proj.id
-                            proj_name = existing_proj.name # Use canonical name
+                            proj_name = existing_proj.name
                         else:
-                            # Create new project
                             new_proj = Project(name=proj_name)
                             db.session.add(new_proj)
-                            db.session.flush() # Get ID
+                            db.session.flush()
                             project_id = new_proj.id
 
-                    # Create Property
-                    try:
-                        size = float(row.get('Size (sqft)', 0))
-                        if pd.isna(size): size = 0
-                    except: size = 0
+                    # Converters
+                    def get_float(key):
+                        try:
+                            v = row.get(key)
+                            if v is None: return 0.0
+                            return float(v)
+                        except: return 0.0
+                        
+                    def get_int(key):
+                        try:
+                            v = row.get(key)
+                            if v is None: return 0
+                            return int(v)
+                        except: return 0
+                        
+                    size = get_float('Size (sqft)')
+                    rent = get_float('Target Rent')
+                    beds = get_int('Bedrooms')
+                    baths = get_int('Bathrooms')
                     
-                    try:
-                        rent = float(row.get('Target Rent', 0))
-                        if pd.isna(rent): rent = 0
-                    except: rent = 0
+                    notes = get_val('Notes')
+                    desc = get_val('Description')
+                    pos = get_val('Position')
+                    cat = get_val('Category')
+                    furn = get_val('Furnishing')
+                    if furn == 'nan' or not furn: furn = None
                     
-                    try:
-                        beds = int(row.get('Bedrooms', 0))
-                        if pd.isna(beds): beds = 0
-                    except: beds = 0
-                    
-                    try:
-                        baths = int(row.get('Bathrooms', 0))
-                        if pd.isna(baths): baths = 0
-                    except: baths = 0
-                    
-                    notes = str(row.get('Notes', ''))
-                    if notes == 'nan': notes = ''
-                    
-                    desc = str(row.get('Description', ''))
-                    if desc == 'nan': desc = ''
-                    
-                    pos = str(row.get('Position', ''))
-                    if pos == 'nan': pos = ''
-                    
-                    cat = str(row.get('Category', ''))
-                    if cat == 'nan': cat = ''
-                    
-                    furn = str(row.get('Furnishing', ''))
-                    if furn == 'nan': furn = None
-                    
-                    status = str(row.get('Status', 'vacant')).lower()
+                    status = get_val('Status', 'vacant').lower()
                     if status not in ['vacant', 'maintenance', 'reserved']: status = 'vacant'
 
                     new_prop = Property(
                         unit_number=unit_number,
                         project_id=project_id,
-                        project=proj_name, # Legacy
+                        project=proj_name, 
                         block=block,
                         floor=floor,
                         unit=unit_val,
-                        property_type=str(row.get('Type', '')),
+                        property_type=get_val('Type'),
                         property_category=cat,
                         unit_position=pos,
                         size_sqft=size,
