@@ -5,4 +5,4 @@ werkzeug
 python-dotenv
 
 openpyxl
-xhtml2pdf
+

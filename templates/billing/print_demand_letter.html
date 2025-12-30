@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ severity }} - {{ tenant.name }}</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', serif;
+            padding: 60px;
+            color: #000;
+            line-height: 1.6;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            text-decoration: underline;
+            margin-top: 20px;
+        }
+
+        .content {
+            margin-bottom: 40px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+
+        .total-row td {
+            font-weight: bold;
+            border-top: 2px solid #000;
+        }
+
+        .signature {
+            margin-top: 60px;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+
+            button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body onload="window.print()">
+    <div class="header">
+        <div class="logo">SINALAND</div>
+        <p>Your Company Address Here</p>
+        <p>Tel: +60 12-345 6789 | Email: finance@sinaland.com.my</p>
+
+        <div class="title">{{ severity.upper() }}</div>
+    </div>
+
+    <div class="recipient">
+        <p><strong>Date:</strong> {{ date.strftime('%d %B %Y') }}</p>
+        <p><strong>To:</strong><br>
+            {{ tenant.name }}<br>
+            {{ tenant.account_code }}</p>
+    </div>
+
+    <div class="content">
+        <p>Dear Sir/Madam,</p>
+
+        <p><strong>RE: OUTSTANDING RENTAL PAYMENT</strong></p>
+
+        <p>We note from our records that the following amount is still outstanding in your account as of today's date.
+        </p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice Date</th>
+                    <th>Reference</th>
+                    <th>Description</th>
+                    <th>Amount (RM)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.due_date.strftime('%d/%m/%Y') }}</td>
+                    <td>#{{ item.invoice_id }}</td>
+                    <td>{{ item.description }}</td>
+                    <td>{{ "%.2f"|format(item.unpaid_amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="3" style="text-align: right;">TOTAL OUTSTANDING DATE:</td>
+                    <td>RM {{ "%.2f"|format(total_due) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <p>We request that you settle the total outstanding amount of <strong>RM {{ "%.2f"|format(total_due) }}</strong>
+            immediately.</p>
+
+        <p>If you have already made payment, please disregard this notice and forward us the payment proof.</p>
+
+        <p>Thank you.</p>
+    </div>
+
+    <div class="signature">
+        <p>Yours faithfully,</p>
+        <br><br>
+        <p>____________________<br>
+            Credit Control Department<br>
+            SINALAND</p>
+    </div>
+</body>
+
+</html>

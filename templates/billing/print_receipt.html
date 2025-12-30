@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt #{{ receipt.id }}</title>
+    <style>
+        body {
+            font-family: 'Helvetica', sans-serif;
+            padding: 40px;
+            color: #333;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .receipt-details {
+            text-align: right;
+        }
+
+        .amount-box {
+            border: 2px solid #28a745;
+            color: #28a745;
+            padding: 10px 20px;
+            display: inline-block;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+
+            button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body onload="window.print()">
+    <div class="header">
+        <div class="logo">SINALAND</div>
+        <div class="receipt-details">
+            <h1>OFFICIAL RECEIPT</h1>
+            <p><strong>Receipt #:</strong> R-{{ receipt.id }}</p>
+            <p><strong>Date:</strong> {{ receipt.date_received.strftime('%d %b %Y') }}</p>
+        </div>
+    </div>
+
+    <div class="bill-to">
+        <h3>Received From:</h3>
+        <p><strong>{{ receipt.tenant.name }}</strong></p>
+        <p>Account: {{ receipt.tenant.account_code or 'N/A' }}</p>
+    </div>
+
+    <div style="margin-top: 30px; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; padding: 20px 0;">
+        <p><strong>Payment For:</strong> Invoice #{{ receipt.invoice_id }}</p>
+        <p><strong>Description:</strong> {{ receipt.reference or 'Payment Received' }}</p>
+    </div>
+
+    <div style="text-align: right;">
+        <div class="amount-box">
+            PAID: RM {{ "%.2f"|format(receipt.amount) }}
+        </div>
+    </div>
+
+    <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #777;">
+        <p>Thank you for your payment.</p>
+        <p>This is a computer generated receipt and no signature is required.</p>
+    </div>
+</body>
+
+</html>

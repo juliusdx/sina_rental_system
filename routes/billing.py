@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from routes.auth import role_required
 from utils import get_tenant_unpaid_items, log_audit
 from io import BytesIO
-from xhtml2pdf import pisa
+from io import BytesIO
 
 billing_bp = Blueprint('billing', __name__)
 
@@ -95,27 +95,13 @@ def generate_demand_letter(tenant_id):
     elif max_days_overdue > 30:
         severity = "Demand Letter"
         
-    # Generate PDF
-    html = render_template('billing/pdf_demand_letter.html', 
+    # Generate Printable HTML
+    return render_template('billing/print_demand_letter.html', 
                          tenant=tenant,
                          items=unpaid_items,
                          total_due=total_due,
                          date=today,
                          severity=severity)
-                         
-    pdf_output = BytesIO()
-    pisa_status = pisa.CreatePDF(html, dest=pdf_output)
-    
-    if pisa_status.err:
-        return f"PDF generation error: {pisa_status.err}", 500
-        
-    pdf_output.seek(0)
-    filename = f"{severity}_{tenant.account_code}_{today}.pdf"
-    
-    # Log it
-    log_audit('GENERATE', 'Tenant', tenant.id, f"Generated {severity} for RM {total_due:.2f}")
-    
-    return send_file(pdf_output, download_name=filename, as_attachment=True)
 
 @billing_bp.route('/aging_report')
 @login_required
@@ -688,29 +674,11 @@ def tenant_statement(tenant_id):
 @billing_bp.route('/invoice/<int:id>/pdf')
 def download_invoice_pdf(id):
     invoice = Invoice.query.get_or_404(id)
-    html = render_template('billing/pdf_invoice.html', invoice=invoice)
-    
-    pdf_output = BytesIO()
-    pisa_status = pisa.CreatePDF(html, dest=pdf_output)
-    
-    if pisa_status.err:
-        return f"PDF generation error: {pisa_status.err}", 500
-        
-    pdf_output.seek(0)
-    filename = f"Invoice_{invoice.id}_{invoice.tenant.name.replace(' ', '_')}.pdf"
-    return send_file(pdf_output, download_name=filename, as_attachment=True)
+    # Render HTML for printing instead of PDF
+    return render_template('billing/print_invoice.html', invoice=invoice)
 
 @billing_bp.route('/receipt/<int:id>/pdf')
 def download_receipt_pdf(id):
     receipt = Receipt.query.get_or_404(id)
-    html = render_template('billing/pdf_receipt.html', receipt=receipt)
-    
-    pdf_output = BytesIO()
-    pisa_status = pisa.CreatePDF(html, dest=pdf_output)
-    
-    if pisa_status.err:
-        return f"PDF generation error: {pisa_status.err}", 500
-        
-    pdf_output.seek(0)
-    filename = f"Receipt_R{receipt.id}.pdf"
-    return send_file(pdf_output, download_name=filename, as_attachment=True)
+    # Render HTML for printing instead of PDF
+    return render_template('billing/print_receipt.html', receipt=receipt)

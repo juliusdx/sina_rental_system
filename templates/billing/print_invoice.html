@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice #{{ invoice.id }}</title>
+    <style>
+        body {
+            font-family: 'Helvetica', sans-serif;
+            padding: 40px;
+            color: #333;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .invoice-details {
+            text-align: right;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f9fa;
+        }
+
+        .total {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+
+            button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body onload="window.print()">
+    <div class="header">
+        <div class="logo">SINALAND</div>
+        <div class="invoice-details">
+            <h1>INVOICE</h1>
+            <p><strong>Invoice #:</strong> {{ invoice.id }}</p>
+            <p><strong>Date:</strong> {{ invoice.issue_date.strftime('%d %b %Y') }}</p>
+            <p><strong>Due Date:</strong> {{ invoice.due_date.strftime('%d %b %Y') }}</p>
+        </div>
+    </div>
+
+    <div class="bill-to">
+        <h3>Bill To:</h3>
+        <p><strong>{{ invoice.tenant.name }}</strong></p>
+        <p>{{ invoice.tenant.account_code or '' }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Amount (RM)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td>{{ item.item_type }}</td>
+                <td>{{ "%.2f"|format(item.amount) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="total">
+        <p>Total Amount: RM {{ "%.2f"|format(invoice.total_amount) }}</p>
+    </div>
+
+    <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #777;">
+        <p>This is a computer generated invoice and no signature is required.</p>
+    </div>
+</body>
+
+</html>
