@@ -130,6 +130,26 @@
             </div>
 
             <div class="form-group">
+                <label>Status</label>
+                <select name="status"
+                    style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    <option value="vacant" style="color: black;" {% if property.status=='vacant' %}selected{% endif %}>
+                        Vacant (Available)</option>
+                    <option value="occupied" style="color: black;" disabled {% if property.status=='occupied'
+                        %}selected{% endif %}>Occupied (Lease Active)</option>
+                    <option value="maintenance" style="color: black;" {% if property.status=='maintenance' %}selected{%
+                        endif %}>Maintenance</option>
+                    <option value="reserved" style="color: black;" {% if property.status=='reserved' %}selected{% endif
+                        %}>Reserved (Hold)</option>
+                </select>
+                {% if property.status == 'occupied' %}
+                <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 5px;">
+                    <i class='bx bx-info-circle'></i> Status is managed by active leases.
+                </small>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
                 <label>Property Type</label>
                 <select name="property_type" id="propertyTypeSelect" onchange="toggleFurnishing()"
                     style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
