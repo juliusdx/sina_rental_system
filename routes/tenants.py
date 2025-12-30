@@ -1,8 +1,12 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, send_file, make_response, jsonify
 from models import db, Tenant, Lease, Property
 import csv
-import openpyxl
-from openpyxl import Workbook
+try:
+    import openpyxl
+    from openpyxl import Workbook
+except ImportError:
+    openpyxl = None
+    Workbook = None
 import io
 from flask_login import login_required, current_user
 from routes.auth import role_required
@@ -458,6 +462,9 @@ def add_note(id):
 
 @tenants_bp.route('/download_template')
 def download_template():
+    if not openpyxl:
+        return "Server config error: openpyxl missing", 500
+
     import tempfile
     import os
     
@@ -545,6 +552,10 @@ def import_tenants():
             headers = csv_reader.fieldnames
             data_rows = list(csv_reader)
         else:
+            if not openpyxl:
+                flash('Server missing openpyxl library', 'error')
+                return redirect(url_for('tenants.list_tenants'))
+                
             # Handle Excel with openpyxl
             wb = openpyxl.load_workbook(file)
             ws = wb.active

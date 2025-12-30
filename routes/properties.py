@@ -4,8 +4,13 @@ from datetime import date, datetime
 import os
 import io
 import csv
-import openpyxl
-from openpyxl import Workbook
+
+try:
+    import openpyxl
+    from openpyxl import Workbook
+except ImportError:
+    openpyxl = None
+    Workbook = None
 
 from werkzeug.utils import secure_filename
 from flask_login import login_required
@@ -410,6 +415,9 @@ def add_project():
 @properties_bp.route('/download_template')
 @login_required
 def download_template():
+    if not openpyxl:
+        return "Internal Error: openpyxl library missing", 500
+        
     # Create a Workbook using openpyxl
     wb = Workbook()
     ws = wb.active
@@ -458,10 +466,12 @@ def bulk_upload():
             
         if file:
             try:
-                # Determine file type
                 if file.filename.endswith('.csv'):
                     df = pd.read_csv(file)
                 else:
+                    if not openpyxl:
+                        flash('Server Error: "openpyxl" library not installed. Please contact admin.', 'error')
+                        return redirect(request.url)
                     df = pd.read_excel(file)
                     
                 added_count = 0
