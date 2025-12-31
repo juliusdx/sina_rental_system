@@ -70,6 +70,30 @@ def dashboard():
         
     if type_filter:
         query = query.filter(Property.property_type.ilike(type_filter))
+
+    # New Filters
+    position_filter = request.args.get('position')
+    bedrooms_filter = request.args.get('bedrooms')
+    floor_filter = request.args.get('floor')
+    
+    if position_filter:
+        query = query.filter(Property.unit_position.ilike(position_filter))
+        
+    if floor_filter:
+        # Exact match for floor (e.g. "G", "1")
+        query = query.filter(Property.floor == floor_filter)
+        
+    if bedrooms_filter:
+        try:
+            # Handle "4+" logic or exact
+            if '+' in bedrooms_filter:
+                min_beds = int(bedrooms_filter.strip('+'))
+                query = query.filter(Property.bedrooms >= min_beds)
+            else:
+                beds = int(bedrooms_filter)
+                query = query.filter(Property.bedrooms == beds)
+        except:
+            pass # Ignore invalid int
         
     if search_term:
         term = f"%{search_term}%"
@@ -529,9 +553,29 @@ def bulk_upload():
                     
                     # Construct if missing
                     if not unit_number and (unit_val or floor):
-                        parts = [p for p in [proj_name, block, floor, unit_val] if p]
-                        if parts:
-                            unit_number = "-".join(parts)
+                        # Fix: Don't include proj_name in the ID (redundant and causes mismatch)
+                        # Fix: Avoid double prefixing if unit_val already contains info
+                        
+                        prefix = ""
+                        clean_unit = unit_val
+                        
+                        # Build standard prefix: Block-Floor
+                        prefix_parts = [p for p in [block, floor] if p]
+                        if prefix_parts:
+                            prefix = "-".join(prefix_parts)
+                        
+                        # Logic Fixes:
+                        # 1. If unit_val contains 'Lot' (case-insensitive), assume it is the FULL identifier (e.g. "Lot 17, B-1-5")
+                        # 2. If unit_val starts with prefix, don't add it (existing logic)
+                        
+                        if 'lot' in clean_unit.lower() or 'sh' in clean_unit.lower() or clean_unit.lower().startswith('c-') or clean_unit.startswith('1-') or clean_unit.startswith('0-'):
+                             unit_number = clean_unit
+                        elif prefix and unit_val.startswith(prefix):
+                            unit_number = unit_val
+                        else:
+                             parts = prefix_parts + [unit_val]
+                             parts = [p for p in parts if p]
+                             unit_number = "-".join(parts)
                     
                     if not unit_number:
                         continue 

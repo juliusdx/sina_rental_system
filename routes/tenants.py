@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, send_file, make_response, jsonify
 from models import db, Tenant, Lease, Property
 import csv
+from datetime import datetime, date
 try:
     import openpyxl
     from openpyxl import Workbook
@@ -622,15 +623,21 @@ def import_tenants():
                 # 3. Create Lease
                 # Construct Unit Number
                 proj = str(get_val('project', ''))
-                floor = str(get_val('floor', ''))
-                lot = str(get_val('lot', ''))
                 
-                # Clean unit number parts
-                if floor == 'None': floor = ''
-                if lot == 'None': lot = ''
-                if proj == 'None': proj = ''
+                # Try getting explicit 'Unit' column first (User preference)
+                raw_unit = str(get_val('Unit', '')).strip()
+                if raw_unit and raw_unit != 'None':
+                     unit_no = raw_unit
+                else:
+                    # Fallback to constructing from Floor-Lot
+                    floor = str(get_val('floor', ''))
+                    lot = str(get_val('lot', ''))
+                    
+                    if floor == 'None': floor = ''
+                    if lot == 'None': lot = ''
+                    
+                    unit_no = f"{floor}-{lot}".strip('-')
                 
-                unit_no = f"{floor}-{lot}".strip('-')
                 if not unit_no and acct_code: 
                     unit_no = str(acct_code)
                     # Try to clean project prefix if present in account code
@@ -641,7 +648,8 @@ def import_tenants():
                 # Create dates - handling openpyxl datetime objects or strings
                 def parse_date(d):
                     if not d: return None
-                    if isinstance(d, (datetime, date)): return d
+                    if isinstance(d, datetime): return d.date()
+                    if isinstance(d, date): return d
                     try:
                         return datetime.strptime(str(d), '%Y-%m-%d').date()
                     except:
@@ -654,16 +662,25 @@ def import_tenants():
                 end_date = parse_date(get_val('End Date'))
                 
                 # Default dates if missing
-                from datetime import date
+
                 if not start_date: start_date = date.today() 
                 if not end_date: end_date = date.today().replace(year=date.today().year + 1)
  
-                # Smart Linking
+                # Smart Linking Logic
                 # 1. Try exact match
                 prop_obj = Property.query.filter_by(unit_number=unit_no).first()
                 
-                # 2. Try Prefix Match (Smart Link)
+                # 2. Try Stripping Prefixes (e.g. KC2/1-3-7B -> 1-3-7B)
+                if not prop_obj and '/' in unit_no:
+                    cleaned_unit = unit_no.split('/')[-1].strip()
+                    prop_obj = Property.query.filter_by(unit_number=cleaned_unit).first()
+                    # If found, update our local unit_no to matches canonical property unit
+                    if prop_obj:
+                         unit_no = cleaned_unit
+
+                # 3. Try Prefix Match (Reverse: Import has '1-3-7B', DB has 'KC-1-3-7B')
                 if not prop_obj and proj and unit_no:
+                    # Try common variation
                     candidate = f"{proj}-{unit_no}"
                     prop_obj = Property.query.filter_by(unit_number=candidate).first()
                     
@@ -671,28 +688,46 @@ def import_tenants():
                 prop_id = None
                 if prop_obj:
                     prop_id = prop_obj.id
-                    unit_no = prop_obj.unit_number # Canonical name
-                    # Update status
+                    unit_no = prop_obj.unit_number # Use Canonical name
+                    
+                    # LINK & SYNC PROJECT NAME
+                    # If DB has old project name (e.g. LAT 6) and Import has new (Latitud 6), Update DB!
+                    if proj and prop_obj.project != proj:
+                        prop_obj.project = proj
+                        
+                    # Update status if active lease
                     if end_date >= date.today():
                         prop_obj.status = 'occupied'
 
                 # Only create lease if we have some property info
                 if unit_no or proj:
                     try:
-                        lease = Lease(
+                        # Check for existing lease to avoid duplicates on re-import
+                        existing_lease = Lease.query.filter_by(
                             tenant_id=tenant.id,
-                            property_id=prop_id, # LINKED!
-                            project=proj, # Save the project
                             unit_number=unit_no,
-                            start_date=start_date,
-                            end_date=end_date,
-                            rent_amount=clean_numeric(get_val('Rent RM', 0)),
-                            security_deposit=clean_numeric(get_val('Security', 0)),
-                            utility_deposit=clean_numeric(get_val('Utility', 0)),
-                            misc_deposit=clean_numeric(get_val('MISC', 0))
-                        )
-                        db.session.add(lease)
-                        success_count += 1
+                            start_date=start_date
+                        ).first()
+
+                        if existing_lease:
+                           # Optional: Update existing lease details if needed? 
+                           # For safe import, let's just assume if it exists, it's handled.
+                           pass 
+                        else:
+                            lease = Lease(
+                                tenant_id=tenant.id,
+                                property_id=prop_id, # LINKED!
+                                project=proj, # Save the project
+                                unit_number=unit_no,
+                                start_date=start_date,
+                                end_date=end_date,
+                                rent_amount=clean_numeric(get_val('Rent RM', 0)),
+                                security_deposit=clean_numeric(get_val('Security', 0)),
+                                utility_deposit=clean_numeric(get_val('Utility', 0)),
+                                misc_deposit=clean_numeric(get_val('MISC', 0))
+                            )
+                            db.session.add(lease)
+                            success_count += 1
                     except Exception as lease_error:
                         # If lease creation fails, still count tenant as successful
                         errors.append(f"Row {index}: Tenant created but lease failed - {str(lease_error)}")

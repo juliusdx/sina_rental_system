@@ -134,13 +134,93 @@
         background: rgba(16, 185, 129, 0.2);
         color: #34d399;
     }
+
+    /* High Contrast Filters */
+    .filter-select {
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #64748b !important;
+        background: #1e293b !important;
+        /* Solid Dark Slate */
+        color: #f8fafc !important;
+        /* Bright White */
+        cursor: pointer;
+        font-weight: 500;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .filter-select option {
+        background: #0f172a;
+        /* Even darker for dropdown */
+        color: #ffffff;
+        padding: 8px;
+    }
+
+    .filter-select:focus {
+        border-color: var(--primary) !important;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.2);
+    }
 </style>
 
-<!-- Filters -->
 <!-- Filters -->
 <div style="margin-bottom: 20px;">
     <form action="{{ url_for('properties.dashboard') }}" method="GET"
         style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end;">
+
+        <!-- Filter: Type -->
+        <select name="type" class="form-select filter-select" onchange="this.form.submit()" style="width: 140px;">
+            <option value="">All Types</option>
+            <option value="Apartment" {% if request.args.get('type')=='Apartment' %}selected{% endif %}>Apartment
+            </option>
+            <option value="Condominium" {% if request.args.get('type')=='Condominium' %}selected{% endif %}>Condominium
+            </option>
+            <option value="Shop" {% if request.args.get('type')=='Shop' %}selected{% endif %}>Shop</option>
+            <option value="Terrace" {% if request.args.get('type')=='Terrace' %}selected{% endif %}>Terrace</option>
+            <option value="Acc. Parcel" {% if request.args.get('type')=='Acc. Parcel' %}selected{% endif %}>Acc. Parcel
+            </option>
+        </select>
+
+        <!-- Filter: Position -->
+        <select name="position" class="form-select filter-select" onchange="this.form.submit()" style="width: 140px;">
+            <option value="">All Positions</option>
+            <option value="Intermediate" {% if request.args.get('position')=='Intermediate' %}selected{% endif %}>
+                Intermediate</option>
+            <option value="Corner" {% if request.args.get('position')=='Corner' %}selected{% endif %}>Corner</option>
+            <option value="End Lot" {% if request.args.get('position')=='End Lot' %}selected{% endif %}>End Lot</option>
+        </select>
+
+        <!-- Project Filter (Moved before Floor for logical flow) -->
+        <select id="projectFilter" name="project" onchange="handleProjectChange()" class="form-select filter-select"
+            style="width: 160px;">
+            <option value="">All Projects</option>
+            {% for p in projects %}
+            <option value="{{ p.name }}" {% if current_filters.project==p.name %}selected{% endif %}>{{ p.name }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <!-- Filter: Floor -->
+        <select id="floorFilter" name="floor" class="form-select filter-select" onchange="this.form.submit()"
+            style="width: 100px;">
+            <option value="">All Floors</option>
+            <option value="G" {% if request.args.get('floor')=='G' %}selected{% endif %}>G</option>
+            <option value="1" {% if request.args.get('floor')=='1' %}selected{% endif %}>1</option>
+            <option value="2" {% if request.args.get('floor')=='2' %}selected{% endif %}>2</option>
+            <option value="3" {% if request.args.get('floor')=='3' %}selected{% endif %}>3</option>
+            <option value="4" {% if request.args.get('floor')=='4' %}selected{% endif %}>4</option>
+        </select>
+
+        <!-- Filter: Bedrooms -->
+        <select id="bedroomsFilter" name="bedrooms" class="form-select filter-select" onchange="this.form.submit()"
+            style="width: 120px; display: none;">
+            <option value="">Bedrooms</option>
+            <option value="0" {% if request.args.get('bedrooms')=='0' %}selected{% endif %}>Studio (0)</option>
+            <option value="1" {% if request.args.get('bedrooms')=='1' %}selected{% endif %}>1 Room</option>
+            <option value="2" {% if request.args.get('bedrooms')=='2' %}selected{% endif %}>2 Rooms</option>
+            <option value="3" {% if request.args.get('bedrooms')=='3' %}selected{% endif %}>3 Rooms</option>
+            <option value="4+" {% if request.args.get('bedrooms')=='4+' %}selected{% endif %}>4+ Rooms</option>
+        </select>
 
         <!-- Search -->
         <div style="position: relative;">
@@ -149,28 +229,6 @@
                 value="{{ current_filters.search or '' }}"
                 style="padding: 8px 8px 8px 32px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main); width: 200px;">
         </div>
-
-        <!-- Project Filter -->
-        <select name="project" onchange="this.form.submit()"
-            style="padding: 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main);">
-            <option value="" style="color: black;">All Projects</option>
-            {% for p in projects %}
-            <!-- projects is now a list of Project objects -->
-            <option value="{{ p.name }}" style="color: black;" {% if current_filters.project==p.name %}selected{% endif
-                %}>{{ p.name }}
-            </option>
-            {% endfor %}
-        </select>
-
-        <!-- Type Filter -->
-        <select name="type" onchange="this.form.submit()"
-            style="padding: 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main);">
-            <option value="" style="color: black;">All Types</option>
-            <option value="Commercial" style="color: black;" {% if current_filters.type=='Commercial' %}selected{% endif
-                %}>Commercial</option>
-            <option value="Residential" style="color: black;" {% if current_filters.type=='Residential' %}selected{%
-                endif %}>Residential</option>
-        </select>
 
         <!-- Status Filter (as pills) -->
         <div style="display: flex; gap: 5px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 8px;">
@@ -197,6 +255,88 @@
     </form>
 </div>
 
+<script>
+    function handleProjectChange() {
+        // Clear dependent filters if switching away from Elemen P2
+        const projectSelect = document.getElementById('projectFilter');
+        const bedroomsSelect = document.getElementById('bedroomsFilter');
+        const floorSelect = document.getElementById('floorFilter');
+        const isElemenP2 = projectSelect.value === 'Elemen P2';
+
+        if (!isElemenP2) {
+            bedroomsSelect.value = "";
+            // Keep Floor if it is G-4? Or just reset to safe default?
+            // Safer to reset if it was >4.
+            const currentFloor = parseInt(floorSelect.value);
+            if (currentFloor > 4) {
+                floorSelect.value = "";
+            }
+        }
+
+        // Submit the form
+        projectSelect.form.submit();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const projectSelect = document.getElementById('projectFilter');
+        const bedroomsSelect = document.getElementById('bedroomsFilter');
+        const floorSelect = document.getElementById('floorFilter');
+
+        // Base options for Floor (G-4)
+        const baseFloorOptions = [
+            { val: '', text: 'All Floors' },
+            { val: 'G', text: 'G' },
+            { val: '1', text: '1' },
+            { val: '2', text: '2' },
+            { val: '3', text: '3' },
+            { val: '4', text: '4' }
+        ];
+
+        function updateUI() {
+            const project = projectSelect.value;
+            const isElemenP2 = project === 'Elemen P2';
+
+            // Toggle Bedrooms
+            if (isElemenP2) {
+                bedroomsSelect.style.display = 'inline-block';
+            } else {
+                bedroomsSelect.style.display = 'none';
+            }
+
+            // Logic for Floor Options
+            const currentFloor = floorSelect.getAttribute('data-server-value') || floorSelect.value;
+            floorSelect.innerHTML = '';
+
+            baseFloorOptions.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.val;
+                option.text = opt.text;
+                if (opt.val === currentFloor) option.selected = true;
+                floorSelect.appendChild(option);
+            });
+
+            if (isElemenP2) {
+                // Add extended options (5-25)
+                for (let i = 5; i <= 25; i++) {
+                    const option = document.createElement('option');
+                    option.value = i.toString();
+                    option.text = i.toString();
+                    if (i.toString() === currentFloor) option.selected = true;
+                    floorSelect.appendChild(option);
+                }
+            }
+        }
+
+        // Store server-side value
+        floorSelect.setAttribute('data-server-value', "{{ request.args.get('floor') or '' }}");
+
+        // Initial Run
+        updateUI();
+    });
+</script>
+
+
+
 <!-- Bulk Delete Controls -->
 <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
     <div style="display: flex; gap: 15px; align-items: center;">
@@ -215,6 +355,20 @@
 
 <!-- Property Groups -->
 <div style="display: flex; flex-direction: column; gap: 40px;">
+    {% if not property_groups %}
+    <!-- Empty State -->
+    <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+        <i class='bx bx-search-alt' style="font-size: 4rem; opacity: 0.5; margin-bottom: 20px;"></i>
+        <h3 style="color: var(--text-main); margin-bottom: 10px;">No properties found</h3>
+        <p>Try adjusting your filters or search terms.</p>
+        <button
+            onclick="document.querySelector('form').reset(); window.location.href='{{ url_for('properties.dashboard') }}';"
+            class="btn btn-primary" style="margin-top: 20px;">
+            Clear All Filters
+        </button>
+    </div>
+    {% else %}
+
     {% for project_name, items in property_groups %}
     <div>
         <h2
@@ -226,8 +380,9 @@
 
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
             {% for prop in items %}
-            {% if prop.status == 'occupied' and prop.leases %}
-            {% set current_lease = prop.leases[-1] %}
+            <!-- Logic for Individual Property Card -->
+            {% set current_lease = prop.leases|selectattr("is_active", "equalto", true)|first %}
+            {% if current_lease %}
             <div class="glass-card {{ 'border-status-archived' if prop.archived else 'border-status-occupied' }}"
                 style="padding: 20px; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
 
@@ -375,6 +530,7 @@
         </div>
     </div>
     {% endfor %}
+    {% endif %}
 </div>
 
 <script>
@@ -445,6 +601,7 @@
     }
 
     function deleteSelected() {
+        const btn = document.getElementById('deleteSelectedBtn');
         const checkboxes = document.querySelectorAll('.property-checkbox:checked');
         const ids = Array.from(checkboxes).map(cb => cb.value);
 
@@ -453,34 +610,64 @@
             return;
         }
 
-        const confirmMsg = `Are you sure you want to delete ${ids.length} propert${ids.length > 1 ? 'ies' : 'y'}? This will also delete:\n` +
-            `- All associated leases\n` +
-            `- Property images and files\n\n` +
-            `This action CANNOT be undone!`;
+        // Check for 2-step confirmation
+        if (btn.getAttribute('data-confirm') === 'true') {
+            // EXECUTE DELETE
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Deleting...";
+            btn.disabled = true;
 
-        if (!confirm(confirmMsg)) return;
-
-        // Send delete request
-        fetch('/properties/bulk_delete', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ property_ids: ids })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(`✓ Successfully deleted ${data.deleted_count} propert${data.deleted_count > 1 ? 'ies' : 'y'}`);
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.message);
-                }
+            fetch('/properties/bulk_delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ property_ids: ids })
             })
-            .catch(err => {
-                console.error(err);
-                alert('An error occurred while deleting properties');
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(`✓ Successfully deleted ${data.deleted_count} propert${data.deleted_count > 1 ? 'ies' : 'y'}`);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                        resetDeleteBtn(btn, originalContent);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('An error occurred while deleting properties');
+                    resetDeleteBtn(btn, originalContent);
+                });
+        } else {
+            // FIRST CLICK - ENTER CONFIRM STATE
+            btn.setAttribute('data-confirm', 'true');
+            const originalText = btn.innerHTML; // Save icon+text
+
+            // Allow storing original text to restore later if ignored
+            if (!btn.hasAttribute('data-original-text')) {
+                btn.setAttribute('data-original-text', originalText);
+            }
+
+            const noun = ids.length > 1 ? 'Props' : 'Prop';
+            btn.innerHTML = `<i class='bx bx-check-double'></i> Confirm (${ids.length} ${noun})?`;
+            btn.style.background = '#b91c1c'; // Darker/Danger Red
+
+            // Auto-reset after 3 seconds if not clicked again
+            setTimeout(() => {
+                if (btn.getAttribute('data-confirm') === 'true' && !btn.disabled) {
+                    const savedText = btn.getAttribute('data-original-text') || "<i class='bx bx-trash'></i> Delete Selected";
+                    resetDeleteBtn(btn, savedText);
+                }
+            }, 3000);
+        }
+    }
+
+    function resetDeleteBtn(btn, content) {
+        btn.innerHTML = content;
+        btn.disabled = false;
+        btn.removeAttribute('data-confirm');
+        btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
     }
 </script>
 

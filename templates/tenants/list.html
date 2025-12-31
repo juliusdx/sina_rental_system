@@ -278,44 +278,76 @@
     }
 
     function deleteSelected() {
+        const btn = document.getElementById('deleteSelectedBtn');
         const checkboxes = document.querySelectorAll('.tenant-checkbox:checked');
         const ids = Array.from(checkboxes).map(cb => cb.value);
+
+        console.log("Delete Selected clicked. Found IDs:", ids);
 
         if (ids.length === 0) {
             alert('No tenants selected');
             return;
         }
 
-        const confirmMsg = `Are you sure you want to delete ${ids.length} tenant(s)? This will also delete:\n` +
-            `- All associated leases\n` +
-            `- All invoices\n` +
-            `- All receipts\n` +
-            `- All notes\n\n` +
-            `This action CANNOT be undone!`;
+        // Check for 2-step confirmation
+        if (btn.getAttribute('data-confirm') === 'true') {
+            // EXECUTE DELETE
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Deleting...";
+            btn.disabled = true;
 
-        if (!confirm(confirmMsg)) return;
-
-        // Send delete request
-        fetch('{{ url_for("tenants.bulk_delete") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ tenant_ids: ids })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(`✓ Successfully deleted ${data.deleted_count} tenant(s)`);
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.message);
-                }
+            fetch('{{ url_for("tenants.bulk_delete") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ tenant_ids: ids })
             })
-            .catch(err => {
-                console.error(err);
-                alert('An error occurred while deleting tenants');
-            });
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Delete response:", data);
+                    if (data.status === 'success') {
+                        // Optional: Nicer toast, but alert is fine for success feedback for now
+                        alert(`✓ Successfully deleted ${data.deleted_count} tenant(s)`);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                        resetDeleteBtn(btn, originalContent);
+                    }
+                })
+                .catch(err => {
+                    console.error("Delete fetch error:", err);
+                    alert('An error occurred while deleting tenants: ' + err);
+                    resetDeleteBtn(btn, originalContent);
+                });
+        } else {
+            // FIRST CLICK - ENTER CONFIRM STATE
+            btn.setAttribute('data-confirm', 'true');
+            const originalText = btn.innerHTML; // Save icon+text
+
+            // Allow storing original text to restore later if ignored
+            if (!btn.hasAttribute('data-original-text')) {
+                btn.setAttribute('data-original-text', originalText);
+            }
+
+            btn.innerHTML = `<i class='bx bx-check-double'></i> Confirm (${ids.length})?`;
+            btn.style.background = '#b91c1c'; // Darker/Danger Red
+
+            // Auto-reset after 3 seconds if not clicked again
+            setTimeout(() => {
+                if (btn.getAttribute('data-confirm') === 'true' && !btn.disabled) {
+                    const savedText = btn.getAttribute('data-original-text') || "<i class='bx bx-trash'></i> Delete Selected";
+                    resetDeleteBtn(btn, savedText);
+                }
+            }, 3000);
+        }
+    }
+
+    function resetDeleteBtn(btn, content) {
+        btn.innerHTML = content;
+        btn.disabled = false;
+        btn.removeAttribute('data-confirm');
+        btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
     }
 </script>
 {% endblock %}

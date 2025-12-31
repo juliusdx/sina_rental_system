@@ -76,3 +76,7 @@ venv_broken/
 .idea/
 *.swp
 *~
+
+$*
+
+~$*
