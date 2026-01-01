@@ -1,6 +1,8 @@
+
 from flask import Blueprint, render_template, request, flash, redirect, url_for, send_file, make_response, jsonify
 from models import db, Tenant, Lease, Property
 import csv
+from datetime import datetime
 from datetime import datetime, date
 try:
     import openpyxl
@@ -146,10 +148,11 @@ def add_tenant():
             contact_person=request.form.get('contact_person'),
             email=request.form.get('email'),
             phone=request.form.get('phone'),
-            status=tenant_status,  # Set from form
+            status=tenant_status,
             
             # New Fields
             is_sst_registered = True if request.form.get('is_sst_registered') else False,
+            sst_start_date = datetime.strptime(request.form.get('sst_start_date'), '%Y-%m-%d').date() if request.form.get('sst_start_date') else None,
             sst_registration_number = request.form.get('sst_registration_number'),
             tax_identification_number = request.form.get('tax_identification_number'),
             msic_code = request.form.get('msic_code'),
@@ -285,6 +288,13 @@ def edit_tenant(id):
         
         # Update New Fields
         tenant.is_sst_registered = True if request.form.get('is_sst_registered') else False
+        
+        sst_date_str = request.form.get('sst_start_date')
+        if sst_date_str:
+             tenant.sst_start_date = datetime.strptime(sst_date_str, '%Y-%m-%d').date()
+        else:
+             tenant.sst_start_date = None
+
         tenant.sst_registration_number = request.form.get('sst_registration_number')
         tenant.tax_identification_number = request.form.get('tax_identification_number')
         tenant.msic_code = request.form.get('msic_code')
@@ -302,7 +312,6 @@ def edit_tenant(id):
         
         # New: Handle Lease Creation if no active lease but fields provided
         if not active_lease and request.form.get('rent_amount'):
-             from datetime import datetime
              # Create new lease
              try:
                  new_start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
@@ -356,11 +365,11 @@ def edit_tenant(id):
             active_lease.rent_amount = float(request.form.get('rent_amount') or 0)
             
             # Dates
-            import datetime
+            # Dates
             s_date = request.form.get('start_date')
             e_date = request.form.get('end_date')
-            if s_date: active_lease.start_date = datetime.datetime.strptime(s_date, '%Y-%m-%d').date()
-            if e_date: active_lease.end_date = datetime.datetime.strptime(e_date, '%Y-%m-%d').date()
+            if s_date: active_lease.start_date = datetime.strptime(s_date, '%Y-%m-%d').date()
+            if e_date: active_lease.end_date = datetime.strptime(e_date, '%Y-%m-%d').date()
 
             active_lease.security_deposit = float(request.form.get('security_deposit') or 0)
             active_lease.utility_deposit = float(request.form.get('utility_deposit') or 0)
@@ -410,12 +419,179 @@ def edit_tenant(id):
                 except ValueError:
                     pass
 
+        # Track Changes for Audit
+        changes = []
+        if tenant.is_sst_registered != (True if request.form.get('is_sst_registered') else False):
+             changes.append(f"SST Reg: {tenant.is_sst_registered} -> {not tenant.is_sst_registered}")
+        
+        # Date Comparison
+        new_sst_date_str = request.form.get('sst_start_date')
+        old_sst_date = tenant.sst_start_date
+        new_sst_date = datetime.strptime(new_sst_date_str, '%Y-%m-%d').date() if new_sst_date_str else None
+        
+        if old_sst_date != new_sst_date:
+             changes.append(f"SST Start: {old_sst_date} -> {new_sst_date}")
+
         db.session.commit()
-        log_audit('UPDATE', 'Tenant', tenant.id, f"Updated details for {tenant.name}")
+        
+        audit_msg = f"Updated details for {tenant.name}"
+        if changes:
+             audit_msg += " | " + ", ".join(changes)
+             
+        log_audit('UPDATE', 'Tenant', tenant.id, audit_msg)
         flash('Tenant details updated successfully')
         return redirect(url_for('tenants.list_tenants'))
 
     return render_template('tenants/edit.html', tenant=tenant, lease=active_lease, agents=agents, commission=existing_commission)
+
+@tenants_bp.route('/add_sst_exemption/<int:id>', methods=['POST'])
+@login_required
+@role_required('admin', 'accounts')
+def add_sst_exemption(id):
+    from models import SSTExemption, Invoice, InvoiceLineItem
+    from utils_sst import get_sst_amount_if_applicable, calculate_taxable_fraction
+    from werkzeug.utils import secure_filename
+    from flask import current_app
+    import os
+    import calendar
+    from decimal import Decimal
+    
+    tenant = Tenant.query.get_or_404(id)
+    
+    start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
+    end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date()
+    description = request.form.get('description')
+    
+    # File Upload
+    filename = None
+    if 'evidence_file' in request.files:
+        file = request.files['evidence_file']
+        if file and file.filename != '':
+            filename = secure_filename(f"exemption_{tenant.id}_{start_date}_{file.filename}")
+            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'exemptions')
+            if not os.path.exists(upload_folder):
+                os.makedirs(upload_folder)
+            file.save(os.path.join(upload_folder, filename))
+            
+    if not filename:
+        flash("Exemption letter is mandatory.", "error")
+        return redirect(url_for('tenants.edit_tenant', id=id))
+
+    exemption = SSTExemption(
+        tenant_id=tenant.id,
+        start_date=start_date,
+        end_date=end_date,
+        description=description,
+        evidence_file=filename
+    )
+    db.session.add(exemption)
+    db.session.flush() # Commit/Flush so it appears in queries if needed? Or just append to list?
+    
+    # RETROSPECTIVE CHECK
+    # Find invoices overlapped by this exemption
+    # We look for invoices whose *period* overlaps. 
+    # Current Invoice logic uses 'issue_date' as proxy for period start? 
+    # In 'generate_rent', we set due_date = 1st of month. Let's assume Issue/Due date ~ Period Start.
+    # period_end is end of that month.
+    
+    invoices = Invoice.query.filter_by(tenant_id=tenant.id).filter(
+        Invoice.status != 'void',
+        Invoice.issue_date >= start_date, # Optimization: Only look at invoices after exemption start
+        Invoice.issue_date <= end_date 
+        # Note: This crude filter misses invoices that started BEFORE exemption but overlap into it.
+        # But since generic rent is monthly 1st-30th, checking >= start_date is decent if start_date is mid-month.
+        # If invoice is 1st Jan and exemption starts 10th Jan, issue_date (1st) < start (10th).
+        # So we should widen the search? 
+        # Better: Invoice Period End >= Exemption Start.
+    ).all()
+    
+    # Actually, let's just fetch all invoices from (Start Date - 31 days) to End Date to be safe.
+    from datetime import timedelta
+    search_start = start_date - timedelta(days=31)
+    invoices = Invoice.query.filter_by(tenant_id=tenant.id).filter(
+        Invoice.status != 'void',
+        Invoice.issue_date >= search_start,
+        Invoice.issue_date <= end_date 
+    ).all()
+    
+    credit_total = 0
+    generated_credits = 0
+    
+    for inv in invoices:
+        # Determine Invoice Period
+        # Assuming Invoice Date = 1st of Month (Standard)
+        inv_period_start = inv.issue_date
+        last_day = calendar.monthrange(inv_period_start.year, inv_period_start.month)[1]
+        inv_period_end = date(inv_period_start.year, inv_period_start.month, last_day)
+        
+        # Check actual overlap with Exemption
+        # Overlap = max(start1, start2) < min(end1, end2)
+        overlap_start = max(inv_period_start, start_date)
+        overlap_end = min(inv_period_end, end_date)
+        
+        if overlap_start > overlap_end:
+            continue # No overlap
+            
+        # Check if SST was charged
+        sst_line = next((item for item in inv.line_items if item.item_type == 'sst'), None)
+        if not sst_line:
+            continue # No SST charged, nothing to refund
+            
+        charged_amount = sst_line.amount
+        
+        # Calculate what SHOULD have been charged
+        # We need to simulate the calculation with the NEW exemption list.
+        # Since we just added 'exemption' to session, tenant.exemptions should include it? 
+        # SQLAlchemy identity map should handle this.
+        
+        # We need the rent amount from the invoice (sum of 'Rent' items)
+        rent_amount = sum(item.amount for item in inv.line_items if item.item_type == 'Rent')
+        
+        # Recalculate
+        # We pass the full period because get_sst_amount_if_applicable handles the logic
+        should_be_sst = get_sst_amount_if_applicable(
+            tenant, rent_amount, inv.issue_date, 
+            period_start=inv_period_start, period_end=inv_period_end
+        )
+        
+        diff = float(charged_amount) - float(should_be_sst)
+        
+        if diff > 0.05: # Threshold for rounding diffs
+            # CREATE CREDIT NOTE
+            cn = Invoice(
+                tenant_id=tenant.id,
+                issue_date=date.today(),
+                due_date=date.today(),
+                description=f"Credit Note: SST Adjustment for Inv #{inv.id}",
+                total_amount=-diff,
+                status='unpaid' # Negative balance sits on ledger
+            )
+            db.session.add(cn)
+            db.session.flush()
+            
+            # Line Item
+            item = InvoiceLineItem(
+                invoice_id=cn.id,
+                item_type='credit',
+                description=f"SST Refund ({description}) for Period {overlap_start} to {overlap_end}",
+                amount=-diff
+            )
+            db.session.add(item)
+            
+            generated_credits += 1
+            credit_total += diff
+            
+            log_audit('CREATE', 'Invoice', cn.id, f"Auto-generated Credit Note for SST Exemption")
+
+    db.session.commit()
+    log_audit('UPDATE', 'Tenant', tenant.id, f"Added SST Exemption: {start_date} to {end_date}")
+    
+    msg = "Exemption added successfully."
+    if generated_credits > 0:
+        msg += f" Generated {generated_credits} credit notes totaling RM {credit_total:.2f}."
+        
+    flash(msg, "success")
+    return redirect(url_for('tenants.edit_tenant', id=id))
 
 @tenants_bp.route('/add_note/<int:id>', methods=['POST'])
 @login_required

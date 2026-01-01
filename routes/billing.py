@@ -4,6 +4,7 @@ from datetime import datetime, date
 from flask_login import login_required, current_user
 from routes.auth import role_required
 from utils import get_tenant_unpaid_items, log_audit
+from utils_sst import get_sst_amount_if_applicable
 from io import BytesIO
 from io import BytesIO
 
@@ -264,6 +265,24 @@ def generate_rent():
                 amount=lease.rent_amount
             )
             db.session.add(item)
+            
+            # --- SST Calculation ---
+            import calendar
+            last_day = calendar.monthrange(target_date.year, target_date.month)[1]
+            period_end = date(target_date.year, target_date.month, last_day)
+            
+            sst_amount = get_sst_amount_if_applicable(lease.tenant, lease.rent_amount, target_date, period_start=target_date, period_end=period_end)
+            if sst_amount > 0:
+                sst_item = InvoiceLineItem(
+                    invoice_id=inv.id,
+                    item_type='sst',
+                    description=f"Service Tax (8%)",
+                    amount=sst_amount
+                )
+                db.session.add(sst_item)
+                # Update Invoice Total
+                inv.total_amount += sst_amount
+
             count += 1
             
     db.session.commit()

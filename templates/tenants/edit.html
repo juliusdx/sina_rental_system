@@ -93,10 +93,48 @@
             <!-- Column 2: Tax -->
             <div>
                 <h4 style="margin-bottom: 10px; color: var(--primary);">Tax & E-Invoice</h4>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="color: #fbbf24; font-weight: bold;">SST Effective Date (Start Charging From)</label>
+                    <input type="date" name="sst_start_date"
+                        value="{{ tenant.sst_start_date if tenant.sst_start_date else '' }}"
+                        style="border-color: #fbbf24;">
+                    <small style="color: var(--text-muted);">Leave blank if no SST is charged.</small>
+                </div>
+
+                <!-- Exemption Section -->
+                <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; margin-bottom: 20px;">
+                    <h5 style="color: #fbbf24; margin-bottom: 10px;">SST Exemptions</h5>
+                    {% if tenant.exemptions %}
+                    <ul style="list-style: none; padding: 0; font-size: 0.9em; margin-bottom: 15px;">
+                        {% for ex in tenant.exemptions %}
+                        <li
+                            style="margin-bottom: 5px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; border: 1px solid #333;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: white;">{{ ex.start_date.strftime('%d/%m/%Y') }} - {{
+                                    ex.end_date.strftime('%d/%m/%Y') }}</strong>
+                                {% if ex.evidence_file %}
+                                <a href="{{ url_for('static', filename='uploads/exemptions/' + ex.evidence_file) }}"
+                                    target="_blank" style="color: #60a5fa; font-size: 0.85em;">[View Letter]</a>
+                                {% endif %}
+                            </div>
+                            <div style="color: #aaa; font-style: italic;">{{ ex.description }}</div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p style="font-size: 0.9em; color: #666; font-style: italic;">No exemptions recorded.</p>
+                    {% endif %}
+
+                    <button type="button" onclick="document.getElementById('exemptionModal').style.display='flex'"
+                        class="btn"
+                        style="background: transparent; border: 1px dashed #fbbf24; color: #fbbf24; padding: 5px 10px; cursor: pointer; width: 100%; font-size: 0.9em;">
+                        + Add Exemption Letter
+                    </button>
+                </div>
                 <div class="form-group" style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
                     <input type="checkbox" name="is_sst_registered" id="is_sst" {% if tenant.is_sst_registered
                         %}checked{% endif %} style="width: auto;">
-                    <label for="is_sst" style="margin: 0;">SST Registered?</label>
+                    <label for="is_sst" style="margin: 0;">Tenant is SST Registered?</label>
                 </div>
                 <div class="form-group">
                     <label>SST Registration No.</label>
@@ -306,4 +344,49 @@
     </div>
 </div>
 
+
+
+<!-- Add Exemption Modal -->
+<div id="exemptionModal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000;">
+    <div
+        style="background: #1e293b; padding: 30px; border-radius: 15px; width: 400px; max-width: 90%; border: 1px solid #334155;">
+        <h3 style="color: #fbbf24; margin-bottom: 20px;">Add SST Exemption</h3>
+        <form action="{{ url_for('tenants.add_sst_exemption', id=tenant.id) }}" method="POST"
+            enctype="multipart/form-data">
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #ccc;">Description / Reason</label>
+                <input type="text" name="description" placeholder="e.g. LMW Exemption Letter" required
+                    style="width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 4px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #ccc;">Start Date</label>
+                <input type="date" name="start_date" required
+                    style="width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 4px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #ccc;">End Date</label>
+                <input type="date" name="end_date" required
+                    style="width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 4px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; color: #ccc;">Upload Letter (Mandatory)</label>
+                <input type="file" name="evidence_file" required accept=".pdf,.jpg,.png"
+                    style="width: 100%; padding: 8px; color: white;">
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button type="button" onclick="document.getElementById('exemptionModal').style.display='none'"
+                    style="background: transparent; color: #aaa; border: none; cursor: pointer;">Cancel</button>
+                <button type="submit" class="btn btn-primary"
+                    style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Save
+                    Exemption</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

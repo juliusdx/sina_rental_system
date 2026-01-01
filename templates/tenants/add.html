@@ -119,9 +119,14 @@
             <!-- Column 2: Tax -->
             <div>
                 <h4 style="margin-bottom: 10px; color: var(--primary);">Tax & E-Invoice</h4>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="color: #fbbf24; font-weight: bold;">SST Effective Date (Start Charging From)</label>
+                    <input type="date" name="sst_start_date" style="border-color: #fbbf24;">
+                    <small style="color: var(--text-muted);">Leave blank if no SST is charged.</small>
+                </div>
                 <div class="form-group" style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
                     <input type="checkbox" name="is_sst_registered" id="is_sst_add" style="width: auto;">
-                    <label for="is_sst_add" style="margin: 0;">SST Registered?</label>
+                    <label for="is_sst_add" style="margin: 0;">Tenant is SST Registered?</label>
                 </div>
                 <div class="form-group">
                     <label>SST Registration No.</label>

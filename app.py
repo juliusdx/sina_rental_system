@@ -32,6 +32,8 @@ def create_app():
     app.register_blueprint(properties_bp, url_prefix='/properties')
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(agents_bp)
+    from routes.reports import reports_bp
+    app.register_blueprint(reports_bp, url_prefix='/reports')
 
     @app.route('/')
     def index():

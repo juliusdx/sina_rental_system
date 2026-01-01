@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px;">
+    <h1>SST Preparation Report</h1>
+    <p style="color: var(--text-muted);">Generate the data needed for manual entry into MySST Portal (SST-02).</p>
+</header>
+
+<div class="glass-card" style="padding: 30px; max-width: 600px;">
+    <form action="{{ url_for('reports.sst_preparation') }}" method="POST">
+        <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+            Select Taxable Period
+        </h3>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label>Start Date</label>
+            <input type="date" name="start_date" required>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 30px;">
+            <label>End Date</label>
+            <input type="date" name="end_date" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary"
+            style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <i class='bx bxs-file-export'></i> Generate Excel Report
+        </button>
+    </form>
+
+    <div
+        style="margin-top: 20px; padding: 15px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; font-size: 0.9rem;">
+        <strong><i class='bx bx-info-circle'></i> Note:</strong>
+        This report compiles all invoices issued within the selected date range that have an SST line item (8%).
+        Use the "Taxable Value" and "Tax Amount" columns to fill in the MySST online form.
+    </div>
+</div>
+{% endblock %}

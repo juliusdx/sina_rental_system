@@ -33,10 +33,14 @@ class Tenant(db.Model):
 
     # E-Invoice / Company Details
     is_sst_registered = db.Column(db.Boolean, default=False)
-    sst_registration_number = db.Column(db.String(50))
-    tax_identification_number = db.Column(db.String(50)) # TIN
+    charge_sst = db.Column(db.Boolean, default=False) # Deprecated in favor of start_date, keeping for safety
+    sst_start_date = db.Column(db.Date, nullable=True) # New: Effective date for charging tax
+    sst_registration_number = db.Column(db.String(50)) # TIN
     msic_code = db.Column(db.String(10))
     business_activity = db.Column(db.String(200))
+
+    # SST Configuration
+    charge_sst = db.Column(db.Boolean, default=False) # If True, 8% SST will be added to rent
 
     # Billing Address
     address_line_1 = db.Column(db.String(200))
@@ -75,6 +79,19 @@ class Tenant(db.Model):
         if self.status == 'active' and not self.has_active_lease:
             raise ValueError("Active tenant must have at least one active lease")
         return True
+
+class SSTExemption(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenant.id'), nullable=False)
+    
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    description = db.Column(db.String(200)) # e.g. "Exemption Letter for XYZ"
+    evidence_file = db.Column(db.String(200)) # Path to uploaded file
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    tenant = db.relationship('Tenant', backref=db.backref('exemptions', lazy=True, cascade="all, delete-orphan"))
 
 class TenantNote(db.Model):
     id = db.Column(db.Integer, primary_key=True)
