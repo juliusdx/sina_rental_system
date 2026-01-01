@@ -7,6 +7,12 @@
 </header>
 
 <div class="glass-card" style="padding: 30px; max-width: 600px;">
+    <div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+        <a href="{{ url_for('reports.list_sst_exemptions') }}" class="btn"
+            style="background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid #fbbf24; padding: 5px 15px; font-size: 0.9em;">
+            <i class='bx bx-list-ul'></i> View Exempted Tenants List
+        </a>
+    </div>
     <form action="{{ url_for('reports.sst_preparation') }}" method="POST">
         <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
             Select Taxable Period

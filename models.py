@@ -141,6 +141,9 @@ class Property(db.Model):
     block = db.Column(db.String(50)) # e.g. A, B, Podium
     unit = db.Column(db.String(50)) # e.g. 1, 3A (The simplified unit number)
     
+    # Land
+    land_size = db.Column(db.Float, nullable=True) # Land Area in sqft
+    
     unit_position = db.Column(db.String(50)) # Corner, Intermediate, End Lot
     property_category = db.Column(db.String(50)) # Commercial, Residential, Industrial
     
@@ -173,6 +176,12 @@ class Lease(db.Model):
         from datetime import date
         delta = self.end_date - date.today()
         return delta.days
+
+    @property
+    def is_active(self):
+        from datetime import date
+        today = date.today()
+        return self.start_date <= today <= self.end_date
 
 
 class Invoice(db.Model):

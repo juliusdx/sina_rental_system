@@ -369,14 +369,28 @@
     </div>
     {% else %}
 
-    {% for project_name, items in property_groups %}
+    {% for project_name, items, stats in property_groups %}
     <div>
-        <h2
-            style="margin-bottom: 20px; border-bottom: 2px solid var(--glass-border); padding-bottom: 10px; color: var(--text-main);">
-            {{ project_name if project_name else 'Unassigned' }}
-            <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal; margin-left: 10px;">({{
-                items|length }} units)</span>
-        </h2>
+        <div
+            style="margin-bottom: 20px; border-bottom: 2px solid var(--glass-border); padding-bottom: 10px; display: flex; align-items: center; gap: 15px;">
+            <h2 style="color: var(--text-main); margin: 0;">
+                {{ project_name if project_name else 'Unassigned' }}
+            </h2>
+
+            <!-- Project Stats Pill -->
+            <div
+                style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 20px;">
+                <span style="font-size: 0.9rem; color: var(--text-muted);">
+                    {{ stats.occupied }} / {{ stats.total }} Occupied
+                </span>
+
+                <!-- Circular or Text Badge for Rate -->
+                <span
+                    style="font-size: 0.9rem; font-weight: bold; color: {{ '#34d399' if stats.rate > 80 else '#fbbf24' if stats.rate > 50 else '#f87171' }}">
+                    {{ "%.0f"|format(stats.rate) }}%
+                </span>
+            </div>
+        </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
             {% for prop in items %}
@@ -468,6 +482,10 @@
                             <div style="text-align: right;">
                                 <div style="font-size: 0.8rem; color: var(--text-muted);">{{ prop.size_sqft or '-' }}
                                     sqft</div>
+                                {% if prop.land_size %}
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">Land: {{ prop.land_size }}
+                                    sqft</div>
+                                {% endif %}
                                 {% if prop.furnishing_status %}
                                 <div style="font-size: 0.7rem; color: #fbbf24; margin-top: 2px;">
                                     <i class='bx bx-chair'></i> {{ prop.furnishing_status }}
@@ -502,8 +520,8 @@
                             style="color: var(--primary); font-size: 1.2rem; padding: 5px; background: rgba(59, 130, 246, 0.1); border-radius: 4px;">
                             <i class='bx bx-history'></i>
                         </a>
-                        <a href="{{ url_for('properties.edit_property', id=prop.id) }}" class="btn-icon"
-                            title="Edit Property"
+                        <a href="{{ url_for('properties.edit_property', id=prop.id, **request.args.to_dict()) }}"
+                            class="btn-icon" title="Edit Property"
                             style="color: var(--text-main); font-size: 1.2rem; padding: 5px; background: rgba(255,255,255,0.05); border-radius: 4px;">
                             <i class='bx bxs-edit'></i>
                         </a>

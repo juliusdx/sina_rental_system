@@ -45,8 +45,8 @@
 </div>
 {% endif %}
 
-<form action="{{ url_for('properties.edit_property', id=property.id) }}" method="POST" enctype="multipart/form-data"
-    style="max-width: 800px;">
+<form action="{{ url_for('properties.edit_property', id=property.id, **request.args.to_dict()) }}" method="POST"
+    enctype="multipart/form-data" style="max-width: 800px;">
     <div class="glass-card" style="padding: 24px; margin-bottom: 30px;">
         <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
             <i class='bx bx-building-house'></i> Property Details
@@ -203,8 +203,14 @@
             </div>
 
             <div class="form-group">
-                <label>Size (sq ft)</label>
+                <label>Size (sq ft) [Build Up]</label>
                 <input type="number" step="0.01" name="size_sqft" value="{{ property.size_sqft or '' }}">
+            </div>
+
+            <div class="form-group">
+                <label>Land Area (sq ft)</label>
+                <input type="number" step="0.01" name="land_size" value="{{ property.land_size or '' }}"
+                    placeholder="For Terrace/Land properties">
             </div>
 
             <div class="form-group">

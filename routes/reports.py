@@ -128,3 +128,11 @@ def sst_preparation():
         as_attachment=True,
         download_name=filename
     )
+
+@reports_bp.route('/sst_exemptions', methods=['GET'])
+@login_required
+@role_required('admin', 'accounts')
+def list_sst_exemptions():
+    from models import SSTExemption
+    exemptions = SSTExemption.query.join(Tenant).order_by(SSTExemption.start_date.desc()).all()
+    return render_template('reports/sst_exemptions.html', exemptions=exemptions)

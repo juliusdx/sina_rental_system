@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<header style="margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <a href="{{ url_for('reports.sst_preparation') }}" style="color: var(--text-muted); font-size: 1.5rem;"><i
+                class='bx bx-arrow-back'></i></a>
+        <div>
+            <h1>SST Exempted Tenants</h1>
+            <p style="color: var(--text-muted);">List of all tenants with recorded SST exemptions and evidence.</p>
+        </div>
+    </div>
+</header>
+
+<div class="glass-card" style="padding: 0; overflow: hidden;">
+    <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: rgba(0,0,0,0.2); text-align: left;">
+                <th style="padding: 15px; width: 5%;">#</th>
+                <th style="padding: 15px;">Tenant Name</th>
+                <th style="padding: 15px;">Description</th>
+                <th style="padding: 15px;">Exemption Period</th>
+                <th style="padding: 15px;">Duration</th>
+                <th style="padding: 15px; text-align: center;">Evidence</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ex in exemptions %}
+            <tr style="border-bottom: 1px solid var(--glass-border);">
+                <td style="padding: 15px;">{{ loop.index }}</td>
+                <td style="padding: 15px;">
+                    <a href="{{ url_for('tenants.edit_tenant', id=ex.tenant.id) }}"
+                        style="color: white; font-weight: bold; text-decoration: none;">
+                        {{ ex.tenant.name }}
+                    </a>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ ex.tenant.sst_registration_number or ''
+                        }}</div>
+                </td>
+                <td style="padding: 15px;">{{ ex.description }}</td>
+                <td style="padding: 15px;">
+                    <span style="color: #fbbf24;">{{ ex.start_date.strftime('%d %b %Y') }}</span>
+                    <span style="color: var(--text-muted); margin: 0 5px;">to</span>
+                    <span style="color: #fbbf24;">{{ ex.end_date.strftime('%d %b %Y') }}</span>
+                </td>
+                <td style="padding: 15px;">
+                    {{ (ex.end_date - ex.start_date).days + 1 }} Terms
+                </td>
+                <td style="padding: 15px; text-align: center;">
+                    {% if ex.evidence_file %}
+                    <a href="{{ url_for('static', filename='uploads/exemptions/' + ex.evidence_file) }}" target="_blank"
+                        class="btn"
+                        style="padding: 5px 10px; font-size: 0.8rem; background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">
+                        <i class='bx bx-file'></i> View
+                    </a>
+                    {% else %}
+                    <span style="color: var(--text-muted);">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="padding: 30px; text-align: center; color: var(--text-muted);">
+                    No exemptions recorded.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

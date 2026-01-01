@@ -126,11 +126,25 @@ def dashboard():
         
     # Sort projects: Real names first, alphabetical, then Unassigned
     sorted_keys = sorted(grouped_properties.keys(), key=lambda x: (x == 'Unassigned', x.lower()))
-    property_groups = [(key, grouped_properties[key]) for key in sorted_keys]
+    
+    # Calculate stats per group
+    property_groups = []
+    for key in sorted_keys:
+        items = grouped_properties[key]
+        p_total = len(items)
+        p_occupied = sum(1 for p in items if p.status == 'occupied')
+        p_rate = (p_occupied / p_total * 100) if p_total > 0 else 0
+        
+        stats = {
+            'total': p_total,
+            'occupied': p_occupied,
+            'rate': p_rate
+        }
+        property_groups.append((key, items, stats))
     
     return render_template('properties/dashboard.html', 
                          property_groups=property_groups,
-                         properties=properties, # Keep for safety if used elsewhere, though seemingly not needed for grouping anymore
+                         properties=properties, 
                          stats={
                              'total': total, 
                              'occupancy': occupancy, 
@@ -211,7 +225,10 @@ def add_property():
                 
                 unit_position=request.form.get('unit_position', ''),
                 property_category=request.form.get('property_category', ''),
-                status=request.form.get('status', 'vacant')
+                status=request.form.get('status', 'vacant'),
+                
+                # New Field
+                land_size=float(request.form['land_size']) if request.form.get('land_size') else None
             )
             db.session.add(new_property)
             db.session.commit()
@@ -250,15 +267,11 @@ def edit_property(id):
             property.unit = request.form.get('unit', '').strip()
             
             # ID Generation or Manual
-            # If manual unit_number is different from auto-gen, respect manual? 
-            # Or enforce auto-gen?
-            # Let's enforce auto-gen IF user didn't type a custom one.
-            # Realistically, form will send 'unit_number'.
-            # We'll trust form 'unit_number' but update components too.
             property.unit_number = request.form['unit_number'].strip()
             
             property.property_type = request.form.get('property_type', '')
             property.size_sqft = float(request.form['size_sqft']) if request.form.get('size_sqft') else None
+            property.land_size = float(request.form['land_size']) if request.form.get('land_size') else None
             property.target_rent = float(request.form.get('target_rent', 0)) if request.form.get('target_rent') else 0.0
             property.bedrooms = int(request.form.get('bedrooms', 0))
             property.bathrooms = int(request.form.get('bathrooms', 0))
@@ -299,7 +312,7 @@ def edit_property(id):
             db.session.commit()
             log_audit('UPDATE', 'Property', property.id, f"Updated Property {property.unit_number} details")
             flash(f'Property {property.unit_number} updated successfully!', 'success')
-            return redirect(url_for('properties.dashboard'))
+            return redirect(url_for('properties.dashboard', **request.args.to_dict()))
         except IntegrityError:
             db.session.rollback()
             flash('Error: Unit number already exists!', 'error')
