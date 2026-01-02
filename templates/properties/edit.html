@@ -141,6 +141,10 @@
                         endif %}>Maintenance</option>
                     <option value="reserved" style="color: black;" {% if property.status=='reserved' %}selected{% endif
                         %}>Reserved (Hold)</option>
+                    <option value="Reserved by DL" style="color: black;" {% if property.status=='Reserved by DL'
+                        %}selected{% endif %}>Reserved by DL</option>
+                    <option value="sold" style="color: black;" {% if property.status=='sold' %}selected{% endif %}>Sold
+                    </option>
                 </select>
                 {% if property.status == 'occupied' %}
                 <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 5px;">
@@ -168,6 +172,14 @@
                         %}>Stall</option>
                     <option value="Other" style="color: black;" {% if property.property_type=='Other' %}selected{% endif
                         %}>Other</option>
+                    <option value="Terrace" style="color: black;" {% if property.property_type=='Terrace' %}selected{%
+                        endif %}>Terrace</option>
+                    <option value="Acc. Parcel" style="color: black;" {% if property.property_type=='Acc. Parcel'
+                        %}selected{% endif %}>Acc. Parcel</option>
+                    <option value="Land" style="color: black;" {% if property.property_type=='Land' %}selected{% endif
+                        %}>Land</option>
+                    <option value="Drive-thru" style="color: black;" {% if property.property_type=='Drive-thru'
+                        %}selected{% endif %}>Drive-thru</option>
                 </select>
             </div>
 

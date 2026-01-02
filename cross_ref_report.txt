@@ -1,0 +1,20 @@
+=== CROSS REFERENCE ANALYSIS ===
+Property File Rows: 242
+Tenant File Rows: 118
+Tenant Columns: ['Account Code', 'project', 'floor', 'lot', 'Unit', 'Agreement status', 'Tenant Name', 'Security', 'Utility', 'MISC', 'Rent RM', 'Start Date', 'End Date']
+Unique Property IDs in Prop Source: 222
+Unique Unit Refs in Tenant Source: 117
+
+WARNING: 114 Tenant Units match NOTHING in Property File.
+Sample Missing in Prop Source:
+['c-0-1', 'lot 55,  e-1-9', '1-3-7b', 'lot 20, b-0-8', 'lot 74, g-0-8', 'c-0-13-ap', 'sh13-7-0', 'c-0-13a', 'a-23a-8', '1-3a']
+
+Total Properties in DB: 222
+CRITICAL: 213 Properties from Source are MISSING in DB (Import Failed/Skipped).
+Sample Missing in DB:
+['1-c-1-4', 'b-23a-b-23a-7', 'g-0-1', '3-3-3', '1-c-1-9', 'b-25-b-25-7', 'b-25-b-25-13', '1-c-1-13', 'e-1-lot 55,  e-1-9', 'g-c-0-7']
+ - Found 1 missing 'P5' units.
+
+CRITICAL: 6 Tenant Units do not exist in DB.
+Sample Tenant units with no DB property:
+['cp1', 'senja-1', 'c-0-3a', 'b7-3', 'a-23a-3', '1-3-8b']

@@ -3,6 +3,18 @@
 {% block dashboard_content %}
 <header style="margin-bottom: 30px;">
     <h1>Tenant Directory</h1>
+    {% if stats %}
+    <div style="display: flex; gap: 20px; font-size: 0.95rem; color: var(--text-muted); margin-top: 5px;">
+        <span style="display: flex; align-items: center; gap: 5px;">
+            <i class='bx bx-check-circle' style="color: var(--success);"></i>
+            Total Leases (Imported Rows): <strong style="color: var(--text-main);">{{ stats.total_leases }}</strong>
+        </span>
+        <span style="display: flex; align-items: center; gap: 5px;">
+            <i class='bx bx-user' style="color: var(--primary);"></i>
+            Total Unique Tenants: <strong style="color: var(--text-main);">{{ stats.total_tenants }}</strong>
+        </span>
+    </div>
+    {% endif %}
 </header>
 
 {% with messages = get_flashed_messages() %}

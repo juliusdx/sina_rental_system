@@ -24,9 +24,30 @@ def list_tenants():
     query = Tenant.query
     
     # Filter by Status
-    status_filter = params.get('status')  # 'all', 'active', 'prospective', 'past'
-    if status_filter and status_filter != 'all':
-        query = query.filter(Tenant.status == status_filter)
+    status_filter = params.get('status')
+    today = date.today()
+    
+    if status_filter:
+        if status_filter == 'active':
+            # Active = Status is active AND has at least one valid lease ending in future
+            query = query.filter(
+                Tenant.status == 'active',
+                Tenant.leases.any(Lease.end_date >= today)
+            )
+        elif status_filter == 'lapsed':
+            # Lapsed = Status is active BUT all leases are expired
+            query = query.filter(
+                Tenant.status == 'active',
+                ~Tenant.leases.any(Lease.end_date >= today)
+            )
+        elif status_filter == 'past':
+            # Past = Explicitly marked past
+            query = query.filter(Tenant.status == 'past')
+        elif status_filter == 'prospective':
+            query = query.filter(Tenant.status == 'prospective')
+        elif status_filter != 'all':
+            # Fallback
+            query = query.filter(Tenant.status == status_filter)
     
     # Filter by Project
     project_filter = params.get('project')
@@ -84,6 +105,10 @@ def list_tenants():
     if params.get('partial'):
         return render_template('tenants/rows.html', tenants=tenants)
 
+    # Calculate Stats
+    total_tenants_count = Tenant.query.count()
+    total_leases_count = Lease.query.count()
+
     return render_template('tenants/list.html', 
                          tenants=tenants, 
                          current_sort=sort_col, 
@@ -91,7 +116,11 @@ def list_tenants():
                          projects=projects, 
                          current_project=project_filter, 
                          current_search=search_term,
-                         current_status=status_filter or 'all')
+                         current_status=status_filter or 'all',
+                         stats={
+                             'total_tenants': total_tenants_count,
+                             'total_leases': total_leases_count
+                         })
 
 @tenants_bp.route('/upload_doc/<int:lease_id>', methods=['POST'])
 def upload_doc(lease_id):

@@ -111,6 +111,11 @@
         border-left: 4px solid #34d399;
     }
 
+    .border-status-sold {
+        border-left: 4px solid #ef4444;
+        /* Red for Sold */
+    }
+
     /* Status Pills */
     .pill-status {
         font-size: 0.7rem;
@@ -133,6 +138,11 @@
     .pill-status-vacant {
         background: rgba(16, 185, 129, 0.2);
         color: #34d399;
+    }
+
+    .pill-status-sold {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
     }
 
     /* High Contrast Filters */
@@ -168,17 +178,37 @@
     <form action="{{ url_for('properties.dashboard') }}" method="GET"
         style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end;">
 
+        <!-- Filter: Status -->
+        <select name="status" class="form-select filter-select" onchange="this.form.submit()" style="width: 140px;">
+            <option value="">All Statuses</option>
+            <option value="vacant" {% if request.args.get('status')=='vacant' %}selected{% endif %}>Vacant</option>
+            <option value="occupied" {% if request.args.get('status')=='occupied' %}selected{% endif %}>Occupied
+            </option>
+            <option value="reserved" {% if request.args.get('status')=='reserved' %}selected{% endif %}>Reserved
+            </option>
+            <option value="maintenance" {% if request.args.get('status')=='maintenance' %}selected{% endif %}>
+                Maintenance</option>
+            <option value="sold" {% if request.args.get('status')=='sold' %}selected{% endif %}>Sold</option>
+        </select>
+
         <!-- Filter: Type -->
         <select name="type" class="form-select filter-select" onchange="this.form.submit()" style="width: 140px;">
             <option value="">All Types</option>
             <option value="Apartment" {% if request.args.get('type')=='Apartment' %}selected{% endif %}>Apartment
             </option>
-            <option value="Condominium" {% if request.args.get('type')=='Condominium' %}selected{% endif %}>Condominium
-            </option>
+            <option value="Condo" {% if request.args.get('type')=='Condo' %}selected{% endif %}>Condo</option>
             <option value="Shop" {% if request.args.get('type')=='Shop' %}selected{% endif %}>Shop</option>
+            <option value="Office" {% if request.args.get('type')=='Office' %}selected{% endif %}>Office</option>
             <option value="Terrace" {% if request.args.get('type')=='Terrace' %}selected{% endif %}>Terrace</option>
+            <option value="Warehouse" {% if request.args.get('type')=='Warehouse' %}selected{% endif %}>Warehouse
+            </option>
+            <option value="Stall" {% if request.args.get('type')=='Stall' %}selected{% endif %}>Stall</option>
             <option value="Acc. Parcel" {% if request.args.get('type')=='Acc. Parcel' %}selected{% endif %}>Acc. Parcel
             </option>
+            <option value="Land" {% if request.args.get('type')=='Land' %}selected{% endif %}>Land</option>
+            <option value="Drive-thru" {% if request.args.get('type')=='Drive-thru' %}selected{% endif %}>Drive-thru
+            </option>
+            <option value="Other" {% if request.args.get('type')=='Other' %}selected{% endif %}>Other</option>
         </select>
 
         <!-- Filter: Position -->
@@ -219,15 +249,28 @@
             <option value="1" {% if request.args.get('bedrooms')=='1' %}selected{% endif %}>1 Room</option>
             <option value="2" {% if request.args.get('bedrooms')=='2' %}selected{% endif %}>2 Rooms</option>
             <option value="3" {% if request.args.get('bedrooms')=='3' %}selected{% endif %}>3 Rooms</option>
-            <option value="4+" {% if request.args.get('bedrooms')=='4+' %}selected{% endif %}>4+ Rooms</option>
+        </select>
+
+        <!-- Filter: Furnishing -->
+        <select name="furnishing" class="form-select filter-select" onchange="this.form.submit()" style="width: 140px;">
+            <option value="">All Furnishing</option>
+            <option value="Unfurnished" {% if request.args.get('furnishing')=='Unfurnished' %}selected{% endif %}>
+                Unfurnished</option>
+            <option value="Partially Furnished" {% if request.args.get('furnishing')=='Partially Furnished' %}selected{%
+                endif %}>
+                Partially</option>
+            <option value="Fully Furnished" {% if request.args.get('furnishing')=='Fully Furnished' %}selected{% endif
+                %}>
+                Fully Furnished</option>
         </select>
 
         <!-- Search -->
         <div style="position: relative;">
             <i class='bx bx-search' style="position: absolute; left: 10px; top: 10px; color: var(--text-muted);"></i>
-            <input type="text" name="search" placeholder="Search Unit/Project..."
+            <input type="text" name="search" id="propertySearchInput" placeholder="Search Unit/Project/Tenant..."
                 value="{{ current_filters.search or '' }}"
-                style="padding: 8px 8px 8px 32px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main); width: 200px;">
+                onkeydown="if(event.key === 'Enter'){event.preventDefault();}"
+                style="padding: 8px 8px 8px 32px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main); width: 250px;">
         </div>
 
         <!-- Status Filter (as pills) -->
@@ -370,7 +413,7 @@
     {% else %}
 
     {% for project_name, items, stats in property_groups %}
-    <div>
+    <div class="project-group">
         <div
             style="margin-bottom: 20px; border-bottom: 2px solid var(--glass-border); padding-bottom: 10px; display: flex; align-items: center; gap: 15px;">
             <h2 style="color: var(--text-main); margin: 0;">
@@ -397,8 +440,9 @@
             <!-- Logic for Individual Property Card -->
             {% set current_lease = prop.leases|selectattr("is_active", "equalto", true)|first %}
             {% if current_lease %}
-            <div class="glass-card {{ 'border-status-archived' if prop.archived else 'border-status-occupied' }}"
-                style="padding: 20px; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
+            <div class="glass-card property-card {{ 'border-status-archived' if prop.archived else 'border-status-occupied' }}"
+                style="padding: 20px; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;"
+                data-search-content="{{ prop.unit_number.lower() }} {{ current_lease.tenant.name.lower() }} {{ project_name.lower() if project_name else 'unassigned' }}">
 
                 <!-- Card Header -->
                 <div
@@ -447,8 +491,9 @@
             </div>
             {% else %}
             <!-- Vacant or No Lease -->
-            <div class="glass-card {{ 'border-status-archived' if prop.archived else 'border-status-vacant' }}"
-                style="padding: 20px; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
+            <div class="glass-card property-card {{ 'border-status-archived' if prop.archived else 'border-status-vacant' }}"
+                style="padding: 20px; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;"
+                data-search-content="{{ prop.unit_number.lower() }} {{ project_name.lower() if project_name else 'unassigned' }}">
 
                 <!-- Card Header -->
                 <div
@@ -487,7 +532,10 @@
                                     sqft</div>
                                 {% endif %}
                                 {% if prop.furnishing_status %}
-                                <div style="font-size: 0.7rem; color: #fbbf24; margin-top: 2px;">
+                                <div style="font-size: 0.7rem; margin-top: 2px;
+                                    color: {{ '#10b981' if prop.furnishing_status == 'Fully Furnished' else 
+                                              '#fbbf24' if prop.furnishing_status == 'Partially Furnished' else 
+                                              'var(--text-muted)' }};">
                                     <i class='bx bx-chair'></i> {{ prop.furnishing_status }}
                                 </div>
                                 {% endif %}
@@ -616,6 +664,57 @@
         const selectAllCheckbox = document.getElementById('selectAllCheckbox');
         selectAllCheckbox.checked = count > 0 && count === checkboxes.length;
         selectAllCheckbox.indeterminate = count > 0 && count < checkboxes.length;
+    }
+
+    // Client-Side Search
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('propertySearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', function (e) {
+                const term = e.target.value.toLowerCase();
+                filterPropertiesClientSide(term);
+            });
+        }
+    });
+
+    function filterPropertiesClientSide(term) {
+        const groups = document.querySelectorAll('.project-group');
+
+        // Safe term handling
+        term = term ? term.toLowerCase().trim() : '';
+
+        // Optimization: If empty, reset everything
+        if (!term) {
+            groups.forEach(group => {
+                group.style.display = '';
+                const cards = group.querySelectorAll('.property-card');
+                cards.forEach(card => card.style.display = '');
+            });
+            return;
+        }
+
+        groups.forEach(group => {
+            const cards = group.querySelectorAll('.property-card');
+            let visibleInGroup = 0;
+
+            cards.forEach(card => {
+                const content = (card.getAttribute('data-search-content') || '').toLowerCase();
+
+                if (content.includes(term)) {
+                    card.style.display = ''; // Show
+                    visibleInGroup++;
+                } else {
+                    card.style.display = 'none'; // Hide
+                }
+            });
+
+            // Toggle Group Visibility
+            if (visibleInGroup > 0) {
+                group.style.display = '';
+            } else {
+                group.style.display = 'none';
+            }
+        });
     }
 
     function deleteSelected() {

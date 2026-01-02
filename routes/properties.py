@@ -94,6 +94,10 @@ def dashboard():
                 query = query.filter(Property.bedrooms == beds)
         except:
             pass # Ignore invalid int
+            
+    furnishing_filter = request.args.get('furnishing')
+    if furnishing_filter:
+        query = query.filter(Property.furnishing_status == furnishing_filter)
         
     if search_term:
         term = f"%{search_term}%"
@@ -581,7 +585,7 @@ def bulk_upload():
                         # 1. If unit_val contains 'Lot' (case-insensitive), assume it is the FULL identifier (e.g. "Lot 17, B-1-5")
                         # 2. If unit_val starts with prefix, don't add it (existing logic)
                         
-                        if 'lot' in clean_unit.lower() or 'sh' in clean_unit.lower() or clean_unit.lower().startswith('c-') or clean_unit.startswith('1-') or clean_unit.startswith('0-'):
+                        if 'lot' in clean_unit.lower() or 'sh' in clean_unit.lower() or clean_unit.lower().startswith('c-') or clean_unit.lower().startswith('p5') or clean_unit.startswith('1-') or clean_unit.startswith('0-'):
                              unit_number = clean_unit
                         elif prefix and unit_val.startswith(prefix):
                             unit_number = unit_val
@@ -639,7 +643,7 @@ def bulk_upload():
                     if furn == 'nan' or not furn: furn = None
                     
                     status = get_val('Status', 'vacant').lower()
-                    if status not in ['vacant', 'maintenance', 'reserved']: status = 'vacant'
+                    if status not in ['vacant', 'maintenance', 'reserved', 'sold']: status = 'vacant'
 
                     new_prop = Property(
                         unit_number=unit_number,

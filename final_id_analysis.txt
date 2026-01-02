@@ -1,0 +1,24 @@
+=== NEW ID LOGIC ANALYSIS (PROJECT + UNIT) ===
+Property Rows: 242
+Tenant Rows: 118
+Generated 223 unique Property IDs.
+Generated 117 unique Tenant Link IDs.
+
+MATCH RESULTS:
+Matched: 108
+Missing: 9
+
+SAMPLE MISSING (Tenants that still won't link):
+['kolam centre 1-3-8b', 'kolam centre cp1', 'elemen p5 p5-1', 'elemen p2 a-23a-3', 'elemen p5 p5-3', 'land senja-1', 'elemen p5 p5-2', 'lembah shantung b7-3', 'elemen p2 shops c-0-3a']
+
+DIAGNOSIS:
+Missing ID: 'kolam centre 1-3-8b'
+ -> Similar Props found: ['kolam centre 1-3-7b']
+Missing ID: 'kolam centre cp1'
+ -> Similar Props found: ['kolam centre 1-3-7b']
+Missing ID: 'elemen p5 p5-1'
+ -> Similar Props found: ['elemen p5 4', 'elemen p5 1', 'elemen p5 3']
+Missing ID: 'elemen p2 a-23a-3'
+ -> Similar Props found: ['elemen p2 b-18-15', 'elemen p2 shops c-1-13', 'elemen p2 shops c-1-ap1']
+Missing ID: 'elemen p5 p5-3'
+ -> Similar Props found: ['elemen p5 4', 'elemen p5 1', 'elemen p5 3']

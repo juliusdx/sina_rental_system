@@ -1,0 +1,52 @@
+=== Database State ===
+Total Properties in DB: 222
+Vacant: 222, Occupied: 0
+Total Leases: 7
+Active Leases: 4
+Active Leases with Linked Property: 0
+
+=== Excel Analysis ===
+Total Rows in Excel: 242
+Columns: ['Unit Number', 'Project', 'Block', 'Floor', 'Unit', 'Type', 'Category', 'Position', 'Size (sqft)', 'Land area (sqft)', 'Target Rent', 'Bedrooms', 'Bathrooms', 'Furnishing', 'Description', 'Status', 'Notes']
+First 5 rows:
+   Unit Number    Project Block Floor    Unit Type     Category Position  Size (sqft)  Land area (sqft) Target Rent  Bedrooms  Bathrooms           Furnishing Description Status        Notes
+0          NaN  Elemen P2     B     5  B-5-15  T1C  Residential   Corner       1528.0               NaN                   3.0        2.0  Partially Furnished   Nice view    NaN  Corner unit
+1          NaN  Elemen P2     B     5  B-5-12  T1D  Residential   Corner       1636.0               NaN                   4.0        2.0          Unfurnished   Near lift    NaN    Pool view
+2          NaN  Elemen P2     B     5   B-5-2  T1D  Residential   Corner       1636.0               NaN         NaN       4.0        2.0          Unfurnished         NaN    NaN          NaN
+3          NaN  Elemen P2     B    10  B-10-1  T1C  Residential   Corner       1528.0               NaN         NaN       3.0        2.0          Unfurnished         NaN    NaN          NaN
+4          NaN  Elemen P2     B    12  B-12-1  T1C  Residential   Corner       1528.0               NaN         NaN       3.0        2.0          Unfurnished         NaN    NaN          NaN
+
+=== Linkage Recovery Check ===
+
+=== Detailed Mismatch Analysis ===
+Active Lease Unit Numbers:
+ - ID: 1, Unit: 'P5-3', Linked: None
+ - ID: 4, Unit: 'P5-2', Linked: None
+ - ID: 7, Unit: '1-3-8B', Linked: None
+ - ID: 40, Unit: 'C-0-3A', Linked: None
+
+Sample DB Properties (Top 10):
+ - ID: 1, Unit: 'B-5-15'
+ - ID: 2, Unit: 'B-5-12'
+ - ID: 3, Unit: 'B-5-2'
+ - ID: 4, Unit: 'B-10-1'
+ - ID: 5, Unit: 'B-12-1'
+ - ID: 6, Unit: 'B-13A-12'
+ - ID: 7, Unit: 'B-15-10'
+ - ID: 8, Unit: 'B-16-12'
+ - ID: 9, Unit: 'B-17-2'
+ - ID: 10, Unit: 'B-18-15'
+
+Duplicate 'Unit Number' in Excel: 242
+Series([], Name: count, dtype: int64)
+
+=== Searching for 'P5' in Excel Data ===
+Found 7 rows containing 'P5':
+     Unit Number          Project Block Floor     Unit         Type    Category    Position  Size (sqft)  Land area (sqft) Target Rent  Bedrooms  Bathrooms Furnishing Description  Status                    Notes
+147          NaN  Elemen P2 Shops   NaN     G  C-0-AP5  Acc. Parcel  Commercial         NaN       155.00               NaN        2820       NaN        NaN        NaN         NaN     NaN                      NaN
+236          NaN        Elemen P5   NaN   NaN        1   Drive-thru  Commercial  Standalone      9740.00          54014.40       15000       NaN        NaN        NaN         NaN  Leased            KFC+Pizza Hut
+237          NaN        Elemen P5   NaN   NaN        2   Drive-thru  Commercial  Standalone      4235.00          34412.40       20000       NaN        NaN        NaN         NaN  Leased                Mc Donald
+238          NaN        Elemen P5   NaN   NaN        3   Drive-thru  Commercial  Standalone      4772.33          51836.40       26000       NaN        NaN        NaN         NaN  Leased            Shell Station
+239          NaN        Elemen P5   NaN   NaN        4   Drive-thru  Commercial  Standalone          NaN          29966.98       28000       NaN        NaN        NaN         NaN  Leased  Previous Starbucks site
+240          NaN        Elemen P5   NaN   NaN        5   Drive-thru  Commercial  Standalone          NaN          29966.98         NaN       NaN        NaN        NaN         NaN  Leased                      NaN
+241          NaN        Elemen P5   NaN   NaN        6   Drive-thru  Commercial  Standalone          NaN          23271.77         NaN       NaN        NaN        NaN         NaN  Leased                      NaN

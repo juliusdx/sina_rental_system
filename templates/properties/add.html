@@ -95,6 +95,19 @@
             </div>
 
             <div class="form-group">
+                <label>Status</label>
+                <select name="status"
+                    style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    <option value="vacant" style="color: black;" selected>Vacant (Available)</option>
+                    <option value="occupied" style="color: black;" disabled>Occupied (Lease Active)</option>
+                    <option value="maintenance" style="color: black;">Maintenance</option>
+                    <option value="reserved" style="color: black;">Reserved (Hold)</option>
+                    <option value="Reserved by DL" style="color: black;">Reserved by DL</option>
+                    <option value="sold" style="color: black;">Sold</option>
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label>Property Type</label>
                 <select name="property_type" id="propertyTypeSelect" onchange="toggleFurnishing()"
                     style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
@@ -105,6 +118,10 @@
                     <option value="Condo" style="color: black;">Condo</option>
                     <option value="Warehouse" style="color: black;">Warehouse</option>
                     <option value="Stall" style="color: black;">Stall</option>
+                    <option value="Terrace" style="color: black;">Terrace</option>
+                    <option value="Acc. Parcel" style="color: black;">Acc. Parcel</option>
+                    <option value="Land" style="color: black;">Land</option>
+                    <option value="Drive-thru" style="color: black;">Drive-thru</option>
                     <option value="Other" style="color: black;">Other</option>
                 </select>
             </div>

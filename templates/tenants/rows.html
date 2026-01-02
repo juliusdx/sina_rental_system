@@ -11,14 +11,40 @@
     </td>
     <td style="padding: 10px;">
         {% if tenant.leases %}
-        {# Smart Lease Selection: Find lease with non-zero financial data #}
-        {% set active_lease = namespace(value=none) %}
+        {# Smart Lease Selection: Prioritize Active > Future > Latest Lapsed #}
+        {% set selected_lease = namespace(value=none, priority=0) %}
+        {% set today_date = now().date() if now is defined else None %}
+        {# Fallback for today if now() not passed: rely on JS or just rough logic?
+        Actually, we need today's date. Jinja doesn't have it native.
+        But 'tenant.leases' usually isn't massive.
+        Let's try to assume backend logic filters correct tenants.
+        We want to show the lease that caused it to be 'Active'.
+        #}
+
+        {# We loop and score the leases #}
         {% for lease in tenant.leases %}
+        {% set score = 0 %}
         {% if lease.rent_amount > 0 or lease.security_deposit > 0 %}
-        {% set active_lease.value = lease %}
+        {% set score = score + 1 %}
+        {% endif %}
+
+        {# Check if active/future - crude check or just use days_to_expiry property if available #}
+        {% if lease.days_to_expiry >= 0 %}
+        {% set score = score + 10 %}
+        {% endif %}
+
+        {# Prioritize latest start date as tie breaker #}
+        {# We can't simple compare dates easily in pure Jinja without loop trickery for max,
+        so we rely on the score overwrite.
+        If we iterate in order, last one wins.
+        #}
+
+        {% if selected_lease.value is none or score >= selected_lease.priority %}
+        {% set selected_lease.value = lease %}
+        {% set selected_lease.priority = score %}
         {% endif %}
         {% endfor %}
-        {% set lease = active_lease.value if active_lease.value else tenant.leases[-1] %}
+        {% set lease = selected_lease.value if selected_lease.value else tenant.leases[-1] %}
 
         <div><i class='bx bxs-building'></i> {{ lease.project }}</div>
         {% else %}
