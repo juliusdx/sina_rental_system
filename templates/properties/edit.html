@@ -267,9 +267,52 @@
         </div>
     </div>
 
+    <div class="glass-card" style="padding: 24px; margin-bottom: 30px;">
+        <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+            <i class='bx bx-dollar-circle'></i> Expected Charges (Budget)
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label>Annual Quit Rent (RM)</label>
+                <input type="number" step="0.01" name="expected_quit_rent"
+                    value="{{ property.expected_quit_rent or '' }}" placeholder="0.00"
+                    style="padding: 10px; border-radius: 8px; width: 100%;">
+            </div>
+            <div class="form-group">
+                <label>Annual Assessment (RM)</label>
+                <input type="number" step="0.01" name="expected_assessment"
+                    value="{{ property.expected_assessment or '' }}" placeholder="0.00"
+                    style="padding: 10px; border-radius: 8px; width: 100%;">
+            </div>
+            <div class="form-group">
+                <label>Annual Fire Insurance (RM)</label>
+                <input type="number" step="0.01" name="expected_fire_insurance"
+                    value="{{ property.expected_fire_insurance or '' }}" placeholder="0.00"
+                    style="padding: 10px; border-radius: 8px; width: 100%;">
+            </div>
+            <div class="form-group">
+                <label>Monthly Management Fee (RM)</label>
+                <input type="number" step="0.01" name="expected_management_fee"
+                    value="{{ property.expected_management_fee or '' }}" placeholder="0.00"
+                    style="padding: 10px; border-radius: 8px; width: 100%;">
+            </div>
+            <div class="form-group">
+                <label>Monthly Sinking Fund (RM)</label>
+                <input type="number" step="0.01" name="expected_sinking_fund"
+                    value="{{ property.expected_sinking_fund or '' }}" placeholder="0.00"
+                    style="padding: 10px; border-radius: 8px; width: 100%;">
+            </div>
+            <div class="form-group">
+                <label>Monthly Water Bill (If Fixed) (RM)</label>
+                <input type="number" step="0.01" name="expected_water" value="{{ property.expected_water or '' }}"
+                    placeholder="0.00" style="padding: 10px; border-radius: 8px; width: 100%;">
+            </div>
+        </div>
+    </div>
+
     <div style="display: flex; justify-content: space-between; align-items: center;">
         {% if property.status == 'vacant' and not property.archived %}
-        <button type="button" onclick="archiveProperty('{{ property.id }}')" class="btn"
+        <button type="button" id="archiveBtn" class="btn" data-id="{{ property.id }}"
             style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid #f87171;">
             <i class='bx bx-archive'></i> Archive Property
         </button>
@@ -307,8 +350,33 @@
 </div>
 
 <script>
+    // alert("DEBUG: Script Loaded!"); // Uncomment to test if script runs
+    console.log("Edit Property Script Loaded.");
+
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log("DOM Content Loaded.");
+        toggleFurnishing();
+
+        // Archive Button Logic
+        const archiveBtn = document.getElementById('archiveBtn');
+        if (archiveBtn) {
+            console.log("Archive Button Found. Attaching listener.");
+            archiveBtn.addEventListener('click', function (e) {
+                e.preventDefault(); // Just in case, though type=button
+                console.log("Archive Button CLICKED (Event Listener)");
+                const id = this.getAttribute('data-id');
+                triggerArchive(id);
+            });
+        } else {
+            console.log("Archive Button NOT found (maybe property is not vacant/already archived).");
+        }
+    });
+
     function toggleFurnishing() {
-        const type = document.getElementById('propertyTypeSelect').value;
+        const typeSelect = document.getElementById('propertyTypeSelect');
+        if (!typeSelect) return;
+
+        const type = typeSelect.value;
         const field = document.getElementById('furnishingField');
         const RESIDENTIAL = ['Apartment', 'Condo', 'House', 'Residential'];
 
@@ -319,17 +387,37 @@
         }
     }
 
-    // Run on load
-    document.addEventListener('DOMContentLoaded', toggleFurnishing);
+    async function triggerArchive(id) {
+        console.log("Archive button clicked for ID:", id);
+        // Temporary alert to prove the button works (User requested visual confirmation)
+        // alert("Archive sequence started for ID: " + id); 
 
-    async function archiveProperty(id) {
-        if (!confirm('Are you sure you want to archive this property? It will be hidden from the main inventory list.')) return;
+        if (!confirm('Are you sure you want to archive this property?\nIt will be hidden from the main inventory list.')) {
+            console.log("Archive cancelled by user.");
+            return;
+        }
 
         try {
-            const res = await fetch(`/properties/archive/${id}`, {
-                method: 'POST'
+            const url = '/properties/archive/' + id;
+            console.log("Sending POST request to:", url);
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             });
+
+            console.log("Response status:", res.status);
+
+            if (!res.ok) {
+                const text = await res.text();
+                console.error("Server error response:", text);
+                throw new Error('Network response check failed: ' + res.status);
+            }
+
             const data = await res.json();
+            console.log("Response data:", data);
 
             if (data.status === 'success') {
                 alert(data.message);
@@ -338,8 +426,8 @@
                 alert(data.message || 'Error archiving property');
             }
         } catch (e) {
-            console.error(e);
-            alert('An error occurred');
+            console.error("Archive Exception:", e);
+            alert('An error occurred: ' + e.message);
         }
     }
 

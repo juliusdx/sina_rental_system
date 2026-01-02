@@ -25,6 +25,10 @@
             class="nav-link {% if 'agents' in request.endpoint %}active{% endif %}">
             <i class='bx bx-briefcase-alt-2'></i> Agents & Commissions
         </a>
+        <a href="{{ url_for('properties.expenses_dashboard') }}"
+            class="nav-link {% if request.endpoint == 'properties.expenses_dashboard' %}active{% endif %}">
+            <i class='bx bx-receipt'></i> Property Expenses
+        </a>
         <a href="{{ url_for('reports.sst_preparation') }}"
             class="nav-link {% if 'reports' in request.endpoint %}active{% endif %}">
             <i class='bx bxs-file-export'></i> SST Report

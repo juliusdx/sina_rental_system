@@ -1,0 +1,226 @@
+ID: 1 | Unit: B-5-15 | Status: vacant
+ID: 2 | Unit: B-5-12 | Status: vacant
+ID: 3 | Unit: B-5-2 | Status: vacant
+ID: 4 | Unit: B-10-1 | Status: vacant
+ID: 5 | Unit: B-12-1 | Status: occupied
+ID: 6 | Unit: B-13A-12 | Status: vacant
+ID: 7 | Unit: B-15-10 | Status: vacant
+ID: 8 | Unit: B-16-12 | Status: vacant
+ID: 9 | Unit: B-17-2 | Status: vacant
+ID: 10 | Unit: B-18-15 | Status: occupied
+ID: 11 | Unit: B-19-12 | Status: vacant
+ID: 12 | Unit: B-19-2 | Status: vacant
+ID: 13 | Unit: B-20-1 | Status: vacant
+ID: 14 | Unit: B-20-15 | Status: vacant
+ID: 15 | Unit: B-20-12 | Status: vacant
+ID: 16 | Unit: B-20-2 | Status: vacant
+ID: 17 | Unit: B-21-12 | Status: vacant
+ID: 18 | Unit: B-21-2 | Status: vacant
+ID: 19 | Unit: B-22-1 | Status: vacant
+ID: 20 | Unit: B-22-3 | Status: vacant
+ID: 21 | Unit: B-22-5 | Status: vacant
+ID: 22 | Unit: B-22-7 | Status: vacant
+ID: 23 | Unit: B-22-9 | Status: vacant
+ID: 24 | Unit: B-22-11 | Status: vacant
+ID: 25 | Unit: B-22-13 | Status: vacant
+ID: 26 | Unit: B-22-15 | Status: vacant
+ID: 27 | Unit: B-22-12 | Status: vacant
+ID: 28 | Unit: B-22-10 | Status: vacant
+ID: 29 | Unit: B-22-8 | Status: vacant
+ID: 30 | Unit: B-22-6 | Status: vacant
+ID: 31 | Unit: B-22-2A | Status: vacant
+ID: 32 | Unit: B-22-2 | Status: vacant
+ID: 33 | Unit: B-23-13 | Status: vacant
+ID: 34 | Unit: B-23-15 | Status: vacant
+ID: 35 | Unit: B-23-12 | Status: vacant
+ID: 36 | Unit: B-23-2A | Status: vacant
+ID: 37 | Unit: B-23-2 | Status: vacant
+ID: 38 | Unit: B-23A-7 | Status: vacant
+ID: 39 | Unit: B-23A-9 | Status: vacant
+ID: 40 | Unit: B-23A-13 | Status: vacant
+ID: 41 | Unit: B-23A-10 | Status: vacant
+ID: 42 | Unit: B-23A-8 | Status: vacant
+ID: 43 | Unit: B-23A-2 | Status: vacant
+ID: 44 | Unit: B-25-1 | Status: vacant
+ID: 45 | Unit: B-25-3 | Status: vacant
+ID: 46 | Unit: B-25-7 | Status: vacant
+ID: 47 | Unit: B-25-9 | Status: vacant
+ID: 48 | Unit: B-25-11 | Status: vacant
+ID: 49 | Unit: B-25-13 | Status: vacant
+ID: 50 | Unit: B-25-15 | Status: vacant
+ID: 51 | Unit: B-25-12 | Status: vacant
+ID: 52 | Unit: B-25-10 | Status: vacant
+ID: 53 | Unit: B-25-6 | Status: vacant
+ID: 54 | Unit: B-25-2A | Status: vacant
+ID: 55 | Unit: B-25-2 | Status: vacant
+ID: 56 | Unit: A-5-1 | Status: vacant
+ID: 57 | Unit: A-6-1 | Status: vacant
+ID: 58 | Unit: A-16-8 | Status: vacant
+ID: 59 | Unit: A-18-1 | Status: vacant
+ID: 60 | Unit: A-18-8 | Status: vacant
+ID: 61 | Unit: A-18-2 | Status: vacant
+ID: 62 | Unit: A-19-8 | Status: vacant
+ID: 63 | Unit: A-19-2 | Status: vacant
+ID: 64 | Unit: A-20-10 | Status: vacant
+ID: 65 | Unit: A-21-2 | Status: vacant
+ID: 66 | Unit: A-22-1 | Status: vacant
+ID: 67 | Unit: A-22-2 | Status: vacant
+ID: 68 | Unit: A-23-1 | Status: vacant
+ID: 69 | Unit: A-23-3 | Status: sold
+ID: 70 | Unit: A-23A-5 | Status: vacant
+ID: 71 | Unit: A-23A-9 | Status: vacant
+ID: 72 | Unit: A-23A-11 | Status: vacant
+ID: 73 | Unit: A-23A-13 | Status: vacant
+ID: 74 | Unit: A-23A-10 | Status: vacant
+ID: 75 | Unit: A-23A-12 | Status: occupied
+ID: 76 | Unit: A-23A-8 | Status: vacant
+ID: 77 | Unit: A-23A-6 | Status: vacant
+ID: 78 | Unit: A-25-1 | Status: vacant
+ID: 79 | Unit: A-25-3 | Status: occupied
+ID: 80 | Unit: A-25-10 | Status: vacant
+ID: 81 | Unit: A-25-6 | Status: vacant
+ID: 82 | Unit: C-0-1 | Status: occupied
+ID: 83 | Unit: C-0-2 | Status: occupied
+ID: 84 | Unit: C-0-3 | Status: occupied
+ID: 85 | Unit: C-0-4 | Status: vacant
+ID: 86 | Unit: C-0-5 | Status: occupied
+ID: 87 | Unit: C-0-6 | Status: occupied
+ID: 88 | Unit: C-0-7 | Status: occupied
+ID: 89 | Unit: C-0-8 | Status: occupied
+ID: 90 | Unit: C-0-9 | Status: vacant
+ID: 91 | Unit: C-0-10 | Status: vacant
+ID: 92 | Unit: C-0-11 | Status: occupied
+ID: 93 | Unit: C-0-12 | Status: occupied
+ID: 94 | Unit: C-0-13 | Status: occupied
+ID: 95 | Unit: C-0-13A | Status: occupied
+ID: 96 | Unit: C-0-15 | Status: vacant
+ID: 97 | Unit: C-0-16 | Status: occupied
+ID: 98 | Unit: C-0-17 | Status: occupied
+ID: 99 | Unit: C-0-18 | Status: vacant
+ID: 100 | Unit: C-0-19 | Status: vacant
+ID: 101 | Unit: C-0-20 | Status: vacant
+ID: 102 | Unit: C-1-1 | Status: occupied
+ID: 103 | Unit: C-1-2 | Status: occupied
+ID: 104 | Unit: C-1-3 | Status: vacant
+ID: 105 | Unit: C-1-4 | Status: vacant
+ID: 106 | Unit: C-1-5 | Status: vacant
+ID: 107 | Unit: C-1-6 | Status: vacant
+ID: 108 | Unit: C-1-7 | Status: vacant
+ID: 109 | Unit: C-1-8 | Status: vacant
+ID: 110 | Unit: C-1-9 | Status: vacant
+ID: 111 | Unit: C-1-10 | Status: occupied
+ID: 112 | Unit: C-1-11 | Status: occupied
+ID: 113 | Unit: C-1-12 | Status: occupied
+ID: 114 | Unit: C-1-13 | Status: occupied
+ID: 115 | Unit: C-1-13A | Status: occupied
+ID: 116 | Unit: C-1-15 | Status: vacant
+ID: 117 | Unit: C-1-16 | Status: vacant
+ID: 118 | Unit: C-1-17 | Status: vacant
+ID: 119 | Unit: C-2-1 | Status: occupied
+ID: 120 | Unit: C-2-2 | Status: occupied
+ID: 121 | Unit: Parking floor | Status: vacant
+ID: 122 | Unit: Parking lot | Status: vacant
+ID: 123 | Unit: C-0-1-AP | Status: vacant
+ID: 124 | Unit: C-0-2-AP | Status: vacant
+ID: 125 | Unit: C-0-3-AP | Status: vacant
+ID: 126 | Unit: C-0-4-AP | Status: vacant
+ID: 127 | Unit: C-0-5-AP | Status: vacant
+ID: 128 | Unit: C-0-AP4 | Status: vacant
+ID: 129 | Unit: C-0-AP5 | Status: vacant
+ID: 130 | Unit: C-0-6-AP | Status: vacant
+ID: 131 | Unit: C-0-7-AP | Status: vacant
+ID: 132 | Unit: C-0-8-AP | Status: vacant
+ID: 133 | Unit: C-0-9-AP | Status: vacant
+ID: 134 | Unit: C-0-10-AP | Status: vacant
+ID: 135 | Unit: C-0-11-AP | Status: vacant
+ID: 136 | Unit: C-0-12-AP | Status: vacant
+ID: 137 | Unit: C-0-13-AP | Status: occupied
+ID: 138 | Unit: C-0-13A-AP | Status: occupied
+ID: 139 | Unit: C-0-15-AP | Status: vacant
+ID: 140 | Unit: C-0-16-AP | Status: occupied
+ID: 141 | Unit: C-0-17-AP | Status: vacant
+ID: 142 | Unit: C-0-18-AP | Status: vacant
+ID: 143 | Unit: C-0-19-AP | Status: vacant
+ID: 144 | Unit: C-1-AP1 | Status: vacant
+ID: 145 | Unit: 0-1 | Status: vacant
+ID: 146 | Unit: 1-1 | Status: vacant
+ID: 147 | Unit: 2-1 | Status: vacant
+ID: 148 | Unit: 3-1 | Status: vacant
+ID: 149 | Unit: 0-2 | Status: vacant
+ID: 150 | Unit: 1-2 | Status: occupied
+ID: 151 | Unit: 2-2 | Status: vacant
+ID: 152 | Unit: 3-2 | Status: vacant
+ID: 153 | Unit: 1-3 | Status: occupied
+ID: 154 | Unit: 2-3 | Status: vacant
+ID: 155 | Unit: 3-3 | Status: vacant
+ID: 156 | Unit: 1-3A | Status: occupied
+ID: 157 | Unit: 2-3A | Status: vacant
+ID: 158 | Unit: 3-3A | Status: vacant
+ID: 159 | Unit: 0-5 | Status: occupied
+ID: 160 | Unit: 1-5 | Status: occupied
+ID: 161 | Unit: 0-7 | Status: occupied
+ID: 162 | Unit: B-1 | Status: vacant
+ID: 163 | Unit: 1-3-7B | Status: vacant
+ID: 164 | Unit: 1-3-7A | Status: vacant
+ID: 165 | Unit: 3-B7-3 | Status: vacant
+ID: 166 | Unit: Lot 30 | Status: vacant
+ID: 167 | Unit: Lot 16,  B-1-4 | Status: vacant
+ID: 168 | Unit: Lot 16, B-0-4 | Status: occupied
+ID: 169 | Unit: Lot 17,  B-1-5 | Status: occupied
+ID: 170 | Unit: Lot 17, B-0-5 | Status: vacant
+ID: 171 | Unit: Lot 18,  B-1-6 | Status: occupied
+ID: 172 | Unit: Lot 18, B-0-6 | Status: occupied
+ID: 173 | Unit: Lot 19,  B-1-7 | Status: vacant
+ID: 174 | Unit: Lot 19, B-0-7 | Status: occupied
+ID: 175 | Unit: Lot 20,  B-1-8 | Status: occupied
+ID: 176 | Unit: Lot 20, B-0-8 | Status: occupied
+ID: 177 | Unit: Lot 22,  B-1-10 | Status: vacant
+ID: 178 | Unit: Lot 22, B-0-10 | Status: vacant
+ID: 179 | Unit: Lot 23,  B-1-11 | Status: occupied
+ID: 180 | Unit: Lot 23, B-0-11 | Status: occupied
+ID: 181 | Unit: Lot 49,  E-1-3 | Status: vacant
+ID: 182 | Unit: Lot 49, E-0-3 | Status: vacant
+ID: 183 | Unit: Lot 50,  E-1-4 | Status: vacant
+ID: 184 | Unit: Lot 50, E-0-4 | Status: vacant
+ID: 185 | Unit: Lot 54,  E-1-8 | Status: occupied
+ID: 186 | Unit: Lot 54, E-0-8 | Status: vacant
+ID: 187 | Unit: Lot 55,  E-1-9 | Status: occupied
+ID: 188 | Unit: Lot 55, E-0-9 | Status: occupied
+ID: 189 | Unit: Lot 61,  F-1-3 | Status: vacant
+ID: 190 | Unit: Lot 61, F-0-3 | Status: vacant
+ID: 191 | Unit: Lot 62,  F-1-4 | Status: vacant
+ID: 192 | Unit: Lot 62, F-0-4 | Status: vacant
+ID: 193 | Unit: Lot 63,  F-1-5 | Status: vacant
+ID: 194 | Unit: Lot 63, F-0-5 | Status: vacant
+ID: 195 | Unit: Lot 64,  F-1-6 | Status: vacant
+ID: 196 | Unit: Lot 64, F-0-6 | Status: vacant
+ID: 197 | Unit: Lot 70,  G-1-12 | Status: occupied
+ID: 198 | Unit: Lot 70, G-0-12 | Status: occupied
+ID: 199 | Unit: Lot 71,  G-1-11 | Status: vacant
+ID: 200 | Unit: Lot 71, G-0-11 | Status: occupied
+ID: 201 | Unit: Lot 73,  G-1-9 | Status: occupied
+ID: 202 | Unit: Lot 73, G-0-9 | Status: vacant
+ID: 203 | Unit: Lot 74,  G-1-8 | Status: vacant
+ID: 204 | Unit: Lot 74, G-0-8 | Status: vacant
+ID: 205 | Unit: Lot 82,  H-1-1 | Status: occupied
+ID: 206 | Unit: Lot 82, H-0-1 | Status: occupied
+ID: 207 | Unit: Lot 83,  H-1-2 | Status: occupied
+ID: 208 | Unit: Lot 83, H-0-2 | Status: occupied
+ID: 209 | Unit: Lot 84,  H-1-3 | Status: occupied
+ID: 210 | Unit: Lot 84, H-0-3 | Status: occupied
+ID: 211 | Unit: Lot 85,  H-1-4 | Status: occupied
+ID: 212 | Unit: Lot 85, H-0-4 | Status: occupied
+ID: 213 | Unit: Lot 86,  H-1-5 | Status: vacant
+ID: 214 | Unit: Lot 86, H-0-5 | Status: occupied
+ID: 215 | Unit: SH13-1-0 | Status: vacant
+ID: 216 | Unit: SH13-3-0 | Status: vacant
+ID: 217 | Unit: SH13-5-0 | Status: vacant
+ID: 218 | Unit: SH13-6-0 | Status: occupied
+ID: 219 | Unit: SH13-7-0 | Status: vacant
+ID: 220 | Unit: P5-1 | Status: vacant
+ID: 221 | Unit: P5-2 | Status: vacant
+ID: 222 | Unit: P5-3 | Status: vacant
+ID: 223 | Unit: P5-4 | Status: vacant
+ID: 224 | Unit: P5-5 | Status: vacant
+ID: 225 | Unit: P5-6 | Status: vacant
+ID: 226 | Unit: Senja-1 | Status: vacant

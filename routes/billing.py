@@ -283,6 +283,31 @@ def generate_rent():
                 # Update Invoice Total
                 inv.total_amount += sst_amount
 
+            # --- Charge-back Expenses ---
+            # Find unbilled expenses for this property meant for the tenant
+            from models import PropertyExpense
+            pending_expenses = PropertyExpense.query.filter_by(
+                property_id=lease.property_id, 
+                charge_tenant=True,
+                tenant_invoice_id=None
+            ).all()
+
+            for exp in pending_expenses:
+                # Add to invoice
+                charge_item = InvoiceLineItem(
+                    invoice_id=inv.id,
+                    item_type='Chargeback', # or exp.expense_type
+                    description=f"{exp.expense_type.replace('_', ' ').title()} - {exp.description or 'Reimbursement'}",
+                    amount=exp.amount
+                )
+                db.session.add(charge_item)
+                
+                # Update Expense Record
+                exp.tenant_invoice_id = inv.id
+                
+                # Update Total
+                inv.total_amount += exp.amount
+
             count += 1
             
     db.session.commit()

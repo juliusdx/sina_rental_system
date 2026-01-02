@@ -7,6 +7,10 @@ def run_migration():
     with app.app_context():
         print("Migrating Schema...")
         try:
+            # Create New Tables
+            db.create_all()
+            print("New tables (if any) created.")
+
             # Check if columns exist first (idempotent)
             # SQLite specific check
             conn = db.engine.connect()

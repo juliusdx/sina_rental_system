@@ -4,6 +4,19 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+# GL Code Mapping for Property Expenses
+# TODO: User to provide actual GL codes - these are placeholders
+EXPENSE_GL_CODES = {
+    'quit_rent': '8000/01',
+    'assessment': '8000/02', 
+    'fire_insurance': '8000/03',
+    'management_fee': '8000/04',
+    'sinking_fund': '8000/05',
+    'water': '8000/06',
+    'repair': '8000/07',
+    'other': '8000/99'
+}
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -147,6 +160,14 @@ class Property(db.Model):
     unit_position = db.Column(db.String(50)) # Corner, Intermediate, End Lot
     property_category = db.Column(db.String(50)) # Commercial, Residential, Industrial
     
+    # Financials (Expected Charges for Budgeting)
+    expected_quit_rent = db.Column(db.Float, default=0.0) # Annual
+    expected_assessment = db.Column(db.Float, default=0.0) # Annual
+    expected_fire_insurance = db.Column(db.Float, default=0.0) # Annual
+    expected_management_fee = db.Column(db.Float, default=0.0) # Monthly
+    expected_sinking_fund = db.Column(db.Float, default=0.0) # Monthly
+    expected_water = db.Column(db.Float, default=0.0) # Monthly
+    
     # Relationship
     leases = db.relationship('Lease', backref='property_obj', lazy=True)
 
@@ -241,3 +262,37 @@ class Commission(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     lease = db.relationship('Lease', backref=db.backref('commissions', lazy=True))
+
+class PropertyExpense(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    property_id = db.Column(db.Integer, db.ForeignKey('property.id'), nullable=False)
+    
+    # Expense Details
+    expense_type = db.Column(db.String(50), nullable=False) # quit_rent, assessment, insurance, sinking_fund, management_fee
+    amount = db.Column(db.Float, nullable=False)
+    description = db.Column(db.String(200))
+    
+    # Dates
+    bill_date = db.Column(db.Date) # Vendor Invoice Date
+    due_date = db.Column(db.Date) # When we must pay
+    
+    # Payment Status (Us paying Vendor)
+    paid_by_company = db.Column(db.Boolean, default=False)
+    payment_date = db.Column(db.Date)
+    payment_reference = db.Column(db.String(100)) # PV No
+    payment_proof = db.Column(db.String(200)) # File
+    
+    # Charge Back to Tenant
+    charge_tenant = db.Column(db.Boolean, default=False)
+    tenant_invoice_id = db.Column(db.Integer, db.ForeignKey('invoice.id'))
+    
+    # Accounting Integration
+    gl_code = db.Column(db.String(50)) # Keypoint Account Code
+    export_status = db.Column(db.String(20), default='pending') # pending, exported
+    exported_at = db.Column(db.DateTime)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    property = db.relationship('Property', backref=db.backref('expenses', lazy=True, cascade="all, delete-orphan"))
+    tenant_invoice = db.relationship('Invoice', backref=db.backref('property_expenses', lazy=True))

@@ -14,6 +14,7 @@ except ImportError:
 
 from werkzeug.utils import secure_filename
 from flask_login import login_required
+from routes.auth import role_required
 from utils import log_audit
 from sqlalchemy.exc import IntegrityError
 
@@ -232,7 +233,15 @@ def add_property():
                 status=request.form.get('status', 'vacant'),
                 
                 # New Field
-                land_size=float(request.form['land_size']) if request.form.get('land_size') else None
+                land_size=float(request.form['land_size']) if request.form.get('land_size') else None,
+                
+                # Expected Charges
+                expected_quit_rent=float(request.form.get('expected_quit_rent') or 0.0),
+                expected_assessment=float(request.form.get('expected_assessment') or 0.0),
+                expected_fire_insurance=float(request.form.get('expected_fire_insurance') or 0.0),
+                expected_management_fee=float(request.form.get('expected_management_fee') or 0.0),
+                expected_sinking_fund=float(request.form.get('expected_sinking_fund') or 0.0),
+                expected_water=float(request.form.get('expected_water') or 0.0)
             )
             db.session.add(new_property)
             db.session.commit()
@@ -287,7 +296,7 @@ def edit_property(id):
             
             # Handle Manual Status Change
             new_status = request.form.get('status')
-            if new_status and new_status in ['vacant', 'maintenance', 'reserved']:
+            if new_status and new_status in ['vacant', 'maintenance', 'reserved', 'sold']:
                 # prevent setting to vacant if actively leased? Recalculate will handle it but let's be safe
                 # If currently occupied and trying to set to something else:
                 if property.status == 'occupied' and new_status != 'occupied':
@@ -295,13 +304,27 @@ def edit_property(id):
                      # But user might want to force maintenance even if leased? (Unlikely).
                      # Let's just allow it, recalculate handles the truth.
                      pass
+                
                 property.status = new_status
+                
+                # Auto-archive if sold
+                if new_status == 'sold':
+                    property.archived = True
+                    property.archived_date = datetime.utcnow()
             
             # Handle Furnishing
             if property.property_type in ['Apartment', 'Condo', 'House', 'Residential']:
                  property.furnishing_status = request.form.get('furnishing_status')
             else:
                  property.furnishing_status = None
+            
+            # Expected Charges
+            property.expected_quit_rent = float(request.form.get('expected_quit_rent') or 0.0)
+            property.expected_assessment = float(request.form.get('expected_assessment') or 0.0)
+            property.expected_fire_insurance = float(request.form.get('expected_fire_insurance') or 0.0)
+            property.expected_management_fee = float(request.form.get('expected_management_fee') or 0.0)
+            property.expected_sinking_fund = float(request.form.get('expected_sinking_fund') or 0.0)
+            property.expected_water = float(request.form.get('expected_water') or 0.0)
             
             # Handle File Upload
             if 'image' in request.files:
@@ -397,14 +420,25 @@ def history(id):
                 'attachment': note.attachment
             })
 
+    # 4. Fetch Expenses & Stats
+    from models import PropertyExpense
+    expenses = PropertyExpense.query.filter_by(property_id=id).order_by(PropertyExpense.bill_date.desc()).all()
+    
+    total_expenses = sum(e.amount for e in expenses)
+    paid_expenses = sum(e.amount for e in expenses if e.paid_by_company)
+    pending_expenses = total_expenses - paid_expenses
+
     return render_template('properties/history.html', 
                          property=property,
                          tenancy_history=tenancy_history,
                          issues=issues,
-                         current_lease=current_lease)
+                         current_lease=current_lease,
+                         expenses=expenses,
+                         expense_stats={'total': total_expenses, 'paid': paid_expenses, 'pending': pending_expenses})
 
 @properties_bp.route('/archive/<int:id>', methods=['POST'])
 @login_required
+@role_required('admin', 'coordinator')
 def archive_property(id):
     property = Property.query.get_or_404(id)
     
@@ -757,6 +791,8 @@ def quick_add_tenant():
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+
+
 @properties_bp.route('/bulk_delete', methods=['POST'])
 @login_required
 def bulk_delete():
@@ -814,3 +850,341 @@ def bulk_delete():
     except Exception as e:
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 500
+@properties_bp.route('/<int:id>/add_expense', methods=['POST'])
+@login_required
+@role_required('admin', 'coordinator', 'accounts')
+def add_expense(id):
+    from models import PropertyExpense, EXPENSE_GL_CODES
+    try:
+        property = Property.query.get_or_404(id)
+        
+        # Parse Dates
+        bill_date = datetime.strptime(request.form.get('bill_date'),('%Y-%m-%d')).date() if request.form.get('bill_date') else date.today()
+        due_date = datetime.strptime(request.form.get('due_date'),('%Y-%m-%d')).date() if request.form.get('due_date') else None
+        
+        expense_type = request.form.get('expense_type')
+        
+        # Auto-assign GL code based on expense type (user can override if provided)
+        gl_code = request.form.get('gl_code') or EXPENSE_GL_CODES.get(expense_type, '8000/99')
+        
+        expense = PropertyExpense(
+            property_id=property.id,
+            expense_type=expense_type,
+            amount=float(request.form.get('amount')),
+            description=request.form.get('description'),
+            bill_date=bill_date,
+            due_date=due_date,
+            gl_code=gl_code,
+            charge_tenant=True if request.form.get('charge_tenant') else False
+        )
+        
+        db.session.add(expense)
+        db.session.commit()
+        
+        log_audit('CREATE', 'PropertyExpense', expense.id, f"Added Expense: {expense.expense_type} ({expense.amount})")
+        flash('Expense added successfully.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding expense: {str(e)}', 'error')
+        
+    return redirect(url_for('properties.history', id=id))
+
+@properties_bp.route('/expense/<int:id>/delete', methods=['POST'])
+@login_required
+@role_required('admin', 'accounts')
+def delete_expense(id):
+    from models import PropertyExpense
+    try:
+        expense = PropertyExpense.query.get_or_404(id)
+        prop_id = expense.property_id
+        db.session.delete(expense)
+        db.session.commit()
+        flash('Expense deleted.', 'success')
+        return redirect(url_for('properties.history', id=prop_id))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting expense: {str(e)}', 'error')
+        return redirect(request.referrer)
+
+@properties_bp.route('/expense/<int:id>/mark_paid', methods=['POST'])
+@login_required
+@role_required('admin', 'accounts')
+def mark_expense_paid(id):
+    from models import PropertyExpense
+    try:
+        expense = PropertyExpense.query.get_or_404(id)
+        
+        payment_date = datetime.strptime(request.form.get('payment_date'), '%Y-%m-%d').date() if request.form.get('payment_date') else date.today()
+        
+        expense.paid_by_company = True
+        expense.payment_date = payment_date
+        expense.payment_reference = request.form.get('reference')
+        
+        # Handle File Upload
+        if 'proof' in request.files:
+            file = request.files['proof']
+            if file and file.filename != '':
+                filename = secure_filename(f"exp_{expense.id}_{file.filename}")
+                upload_folder = os.path.join('static', 'uploads', 'expenses')
+                os.makedirs(upload_folder, exist_ok=True)
+                file.save(os.path.join(upload_folder, filename))
+                expense.payment_proof = filename
+
+        db.session.commit()
+        flash('Expense marked as paid.', 'success')
+        return redirect(url_for('properties.history', id=expense.property_id))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error: {str(e)}', 'error')
+        return redirect(request.referrer)
+
+@properties_bp.route('/expenses')
+@login_required
+def expenses_dashboard():
+    from models import PropertyExpense
+    
+    # Filters
+    property_filter = request.args.get('property')
+    expense_type_filter = request.args.get('expense_type')
+    status_filter = request.args.get('status')  # paid, unpaid, all
+    export_status_filter = request.args.get('export_status') # pending, exported, all
+    
+    query = PropertyExpense.query
+    
+    if property_filter:
+        query = query.filter(PropertyExpense.property_id == property_filter)
+    
+    if expense_type_filter:
+        query = query.filter(PropertyExpense.expense_type == expense_type_filter)
+    
+    if status_filter == 'paid':
+        query = query.filter(PropertyExpense.paid_by_company == True)
+    elif status_filter == 'unpaid':
+        query = query.filter(PropertyExpense.paid_by_company == False)
+        
+    if export_status_filter == 'pending':
+        query = query.filter((PropertyExpense.export_status == 'pending') | (PropertyExpense.export_status == None))
+    elif export_status_filter == 'exported':
+        query = query.filter(PropertyExpense.export_status == 'exported')
+    
+    expenses = query.order_by(PropertyExpense.bill_date.desc()).all()
+    
+    # Statistics
+    all_expenses = PropertyExpense.query.all()
+    total_expenses = sum(e.amount for e in all_expenses)
+    paid_expenses = sum(e.amount for e in all_expenses if e.paid_by_company)
+    pending_expenses = total_expenses - paid_expenses
+    
+    # Get properties for filter dropdown
+    properties = Property.query.order_by(Property.unit_number).all()
+    
+    return render_template('properties/expenses_dashboard.html',
+                         expenses=expenses,
+                         properties=properties,
+                         stats={
+                             'total': total_expenses,
+                             'paid': paid_expenses,
+                             'pending': pending_expenses,
+                             'count': len(all_expenses)
+                         },
+                         current_filters={
+                             'property': property_filter,
+                             'expense_type': expense_type_filter,
+                             'status': status_filter,
+                             'export_status': export_status_filter or 'all'
+                         },
+                         today=date.today())
+
+
+
+@properties_bp.route('/expenses/bulk_add', methods=['POST'])
+@login_required
+@role_required('admin', 'coordinator', 'accounts')
+def add_expense_bulk():
+    from models import PropertyExpense
+    try:
+        count = 0
+        for i in range(10):  # Process up to 10 rows
+            property_id = request.form.get(f'property_id_{i}')
+            expense_type = request.form.get(f'expense_type_{i}')
+            amount = request.form.get(f'amount_{i}')
+            bill_date_str = request.form.get(f'bill_date_{i}')
+            
+            # Skip empty rows
+            if not property_id or not expense_type or not amount or not bill_date_str:
+                continue
+            
+            bill_date = datetime.strptime(bill_date_str, '%Y-%m-%d').date()
+            
+            expense = PropertyExpense(
+                property_id=int(property_id),
+                expense_type=expense_type,
+                amount=float(amount),
+                bill_date=bill_date,
+                description=request.form.get(f'description_{i}'),
+                gl_code=request.form.get(f'gl_code_{i}')
+            )
+            
+            db.session.add(expense)
+            count += 1
+        
+        db.session.commit()
+        log_audit('CREATE', 'PropertyExpense', 0, f"Bulk added {count} expenses")
+        flash(f'Successfully added {count} expense(s).', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding expenses: {str(e)}', 'error')
+    
+    return redirect(url_for('properties.expenses_dashboard'))
+
+@properties_bp.route('/expenses/add_row', methods=['POST'])
+@login_required
+@role_required('admin', 'coordinator', 'accounts')
+def add_expense_row():
+    """Save multiple expenses for one property/date combination"""
+    from models import PropertyExpense, EXPENSE_GL_CODES
+    import json
+    
+    try:
+        property_id = request.form.get('property_id')
+        bill_date_str = request.form.get('bill_date')
+        
+        if not property_id or not bill_date_str:
+            return jsonify({'status': 'error', 'message': 'Property and date required'}), 400
+        
+        bill_date = datetime.strptime(bill_date_str, '%Y-%m-%d').date()
+        
+        # Parse expenses array (sent as JSON strings)
+        expenses_data = request.form.getlist('expenses[]')
+        count = 0
+        
+        for expense_json in expenses_data:
+            expense_info = json.loads(expense_json)
+            expense_type = expense_info['type']
+            amount = float(expense_info['amount'])
+            
+            if amount <= 0:
+                continue
+            
+            # Create expense record with auto-assigned GL code
+            expense = PropertyExpense(
+                property_id=int(property_id),
+                expense_type=expense_type,
+                amount=amount,
+                bill_date=bill_date,
+                gl_code=EXPENSE_GL_CODES.get(expense_type),
+                charge_tenant=expense_info.get('charge_tenant', False)
+            )  # Auto-assign GL code
+            
+            db.session.add(expense)
+            count += 1
+        
+        db.session.commit()
+        log_audit('CREATE', 'PropertyExpense', 0, f"Added {count} expenses for property {property_id}")
+        
+        return jsonify({'status': 'success', 'count': count})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+
+@properties_bp.route('/expenses/export')
+@login_required
+def export_expenses():
+    from models import PropertyExpense
+    
+    # Apply same filters as dashboard
+    property_filter = request.args.get('property')
+    expense_type_filter = request.args.get('expense_type')
+    status_filter = request.args.get('status')
+    export_status_filter = request.args.get('export_status')
+    
+    query = PropertyExpense.query
+    
+    if property_filter:
+        query = query.filter(PropertyExpense.property_id == property_filter)
+    if expense_type_filter:
+        query = query.filter(PropertyExpense.expense_type == expense_type_filter)
+    if status_filter == 'paid':
+        query = query.filter(PropertyExpense.paid_by_company == True)
+    elif status_filter == 'unpaid':
+        query = query.filter(PropertyExpense.paid_by_company == False)
+        
+    if export_status_filter == 'pending':
+        query = query.filter((PropertyExpense.export_status == 'pending') | (PropertyExpense.export_status == None))
+    elif export_status_filter == 'exported':
+        query = query.filter(PropertyExpense.export_status == 'exported')
+    
+    expenses = query.order_by(PropertyExpense.bill_date.desc()).all()
+    
+    # Create Excel file
+    if not Workbook:
+        flash('Excel export not available. Please install openpyxl.', 'error')
+        return redirect(url_for('properties.expenses_dashboard'))
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Expenses"
+    
+    # Headers
+    headers = ['Date', 'Property', 'Expense Type', 'Description', 'Amount (RM)', 
+               'Payment Status', 'Payment Date', 'Payment Reference', 'GL Code', 'Export Status', 'Exported At']
+    ws.append(headers)
+    
+    # Data rows and Status Update
+    export_count = 0
+    for exp in expenses:
+        # Update status if pending
+        if not exp.export_status or exp.export_status == 'pending':
+            exp.export_status = 'exported'
+            exp.exported_at = datetime.utcnow()
+            export_count += 1
+            
+        ws.append([
+            exp.bill_date.strftime('%Y-%m-%d'),
+            exp.property.unit_number,
+            exp.expense_type.replace('_', ' ').title(),
+            exp.description or '',
+            float(exp.amount),
+            'Paid' if exp.paid_by_company else 'Unpaid',
+            exp.payment_date.strftime('%Y-%m-%d') if exp.payment_date else '',
+            exp.payment_reference or '',
+            exp.gl_code or '',
+            exp.export_status,
+            exp.exported_at.strftime('%Y-%m-%d %H:%M:%S') if exp.exported_at else ''
+        ])
+    
+    if export_count > 0:
+        db.session.commit()
+    
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Save to BytesIO
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    # Generate filename with timestamp
+    filename = f"Property_Expenses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )

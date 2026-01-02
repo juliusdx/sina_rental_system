@@ -1,21 +1,22 @@
+
 from app import create_app
-from models import Tenant, Lease
+from models import db, Lease
 
 app = create_app()
 
-with app.app_context():
-    # Find tenant matching "markmaju"
-    tenants = Tenant.query.filter(Tenant.name.ilike('%markmaju%')).all()
-    
-    for t in tenants:
-        print(f"Tenant: {t.name} (ID: {t.id})")
-        print(f"Status: {t.status}")
-        
-        leases = Lease.query.filter_by(tenant_id=t.id).all()
-        print(f"Leases ({len(leases)}):")
-        for l in leases:
-            print(f"  - ID: {l.id}")
-            print(f"    Unit: {l.unit_number}")
-            print(f"    Project: {l.project}")
-            print(f"    Rent: {l.rent_amount}")
-            print(f"    Dates: {l.start_date} to {l.end_date}")
+def list_lease_units():
+    with app.app_context():
+        leases = Lease.query.all()
+        print(f"Total Leases: {len(leases)}")
+        print("Sample Unit Numbers:")
+        for l in leases[:20]:
+            print(f" - '{l.unit_number}'")
+            
+        # Search for '7A'
+        matches = Lease.query.filter(Lease.unit_number.like('%7A%')).all()
+        print(f"\nLeases containing '7A': {len(matches)}")
+        for l in matches:
+             print(f" - '{l.unit_number}' (ID: {l.id})")
+
+if __name__ == "__main__":
+    list_lease_units()

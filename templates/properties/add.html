@@ -197,6 +197,44 @@
         </div>
     </div>
 
+    <div class="glass-card" style="padding: 24px; margin-bottom: 30px;">
+        <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+            <i class='bx bx-dollar-circle'></i> Expected Charges (Budget)
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label>Annual Quit Rent (RM)</label>
+                <input type="number" step="0.01" name="expected_quit_rent" placeholder="0.00"
+                    style="padding: 10px; border-radius: 8px; width: 100%;">
+            </div>
+            <div class="form-group">
+                <label>Annual Assessment (RM)</label>
+                <input type="number" step="0.01" name="expected_assessment" placeholder="0.00"
+                    style="padding: 10px; border-radius: 8px; width: 100%;">
+            </div>
+            <div class="form-group">
+                <label>Annual Fire Insurance (RM)</label>
+                <input type="number" step="0.01" name="expected_fire_insurance" placeholder="0.00"
+                    style="padding: 10px; border-radius: 8px; width: 100%;">
+            </div>
+            <div class="form-group">
+                <label>Monthly Management Fee (RM)</label>
+                <input type="number" step="0.01" name="expected_management_fee" placeholder="0.00"
+                    style="padding: 10px; border-radius: 8px; width: 100%;">
+            </div>
+            <div class="form-group">
+                <label>Monthly Sinking Fund (RM)</label>
+                <input type="number" step="0.01" name="expected_sinking_fund" placeholder="0.00"
+                    style="padding: 10px; border-radius: 8px; width: 100%;">
+            </div>
+            <div class="form-group">
+                <label>Monthly Water Bill (If Fixed) (RM)</label>
+                <input type="number" step="0.01" name="expected_water" placeholder="0.00"
+                    style="padding: 10px; border-radius: 8px; width: 100%;">
+            </div>
+        </div>
+    </div>
+
     <div style="display: flex; justify-content: flex-end; gap: 15px;">
         <a href="{{ url_for('properties.dashboard') }}" class="btn"
             style="background: transparent; border: 1px solid var(--text-muted);">Cancel</a>

@@ -109,6 +109,9 @@
             {% endif %}
         </section>
 
+        <!-- Expenses Section -->
+        {% include 'properties/_expenses.html' %}
+
         <!-- Maintenance Log -->
         <section>
             <h2
@@ -132,7 +135,7 @@
                     <div style="flex: 1;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                             <span
-                                style="font-weight: 500; color: var(--error) if issue.category=='Complaint' else 'var(--text-main)'">
+                                style="font-weight: 500; color: {{ 'var(--error)' if issue.category=='Complaint' else 'var(--text-main)' }}">
                                 {{ issue.category }}
                             </span>
                             <span style="font-size: 0.8rem; color: var(--text-muted);">by {{ issue.tenant_name }}</span>
