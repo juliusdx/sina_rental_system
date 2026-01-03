@@ -1,9 +1,28 @@
 {% extends "layout.html" %}
 
 {% block dashboard_content %}
-<header style="margin-bottom: 30px;">
-    <h1>Edit Invoice #{{ invoice.id }}</h1>
-    <p style="color: var(--text-muted);">Modify invoice details and line items.</p>
+<header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: start;">
+    <div>
+        <h1>Edit Invoice #{{ invoice.id }}</h1>
+        <p style="color: var(--text-muted);">Modify invoice details and line items.</p>
+    </div>
+    <div style="text-align: right;">
+        {% if config and config.environment == 'sandbox' %}
+        <span class="badge badge-warning" style="font-size: 0.9rem; padding: 8px 12px; border: 1px solid #f59e0b;">
+            <i class='bx bx-test-tube'></i> SANDBOX MODE
+        </span>
+        {% endif %}
+
+        <div style="margin-top: 10px;">
+            {% if invoice.lhdn_status == 'Submitted' %}
+            <span class="badge badge-success"><i class='bx bx-check-circle'></i> LHDN: Submitted</span>
+            <div style="font-size: 0.8rem; margin-top: 5px; color: var(--success);">UID: {{
+                invoice.lhdn_submission_uid[:8] }}...</div>
+            {% else %}
+            <span class="badge badge-secondary">LHDN: {{ invoice.lhdn_status or 'Pending' }}</span>
+            {% endif %}
+        </div>
+    </div>
 </header>
 
 <div class="glass-card" style="padding: 30px; max-width: 800px; margin: 0 auto;">
@@ -80,6 +99,14 @@
         <div style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 15px;">
             <a href="{{ url_for('billing.dashboard') }}" class="btn"
                 style="background: transparent; border: 1px solid var(--text-muted);">Cancel</a>
+
+            {% if invoice.lhdn_status != 'Submitted' %}
+            <button type="button" id="btnSubmitLHDN" class="btn"
+                style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); border: none;">
+                <i class='bx bx-cloud-upload'></i> Submit to LHDN
+            </button>
+            {% endif %}
+
             <button type="submit" class="btn btn-primary">Save Changes</button>
         </div>
     </form>
@@ -161,6 +188,63 @@
         } else {
             alert('Error deleting invoice');
         }
+    }
+
+    // LHDN Submit Listener
+    const btnLHDN = document.getElementById('btnSubmitLHDN');
+    if (btnLHDN) {
+        btnLHDN.addEventListener('click', async (e) => {
+            e.preventDefault();
+            console.log("LHDN Clicked");
+
+            // Remove confirm for debug
+            // if (!confirm("Confirm submission to LHDN MyInvois (Sandbox)?")) return;
+
+            const btn = e.target.closest('button');
+            console.log("Button found:", btn);
+            if (!btn) return;
+
+            const originalHTML = btn.innerHTML;
+
+            // Set Loading
+            console.log("Setting loading state...");
+            btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Submitting...";
+            btn.disabled = true;
+
+            try {
+                console.log("Fetching URL:", "{{ url_for('lhdn.submit_invoice', invoice_id=invoice.id) }}");
+                const res = await fetch("{{ url_for('lhdn.submit_invoice', invoice_id=invoice.id) }}", {
+                    method: 'POST'
+                });
+                console.log("Fetch response received:", res.status);
+
+                // Handle non-JSON responses (HTML errors)
+                const contentType = res.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    const text = await res.text();
+                    console.error("Non-JSON Response:", text);
+                    alert("Server Error (Check Console)");
+                    throw new Error("Server returned non-JSON response");
+                }
+
+                const data = await res.json();
+                console.log("Data:", data);
+
+                if (res.ok && data.status === 'success') {
+                    alert("Success: " + data.message + "\nUID: " + data.submission_uid);
+                    location.reload();
+                } else {
+                    alert("Error: " + (data.message || "Unknown Error"));
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                console.error("Catch Error:", err);
+                alert("System Error: " + err.message);
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        });
     }
 
     // Initial calc

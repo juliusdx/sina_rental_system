@@ -1,25 +1,32 @@
+import sqlite3
+import os
 
-from app import create_app
-from models import db
-from sqlalchemy import text
-
-app = create_app()
+DB_PATH = os.path.join('instance', 'rental.db')
 
 def check_schema():
-    with app.app_context():
-        print("--- Lease Indices ---")
-        indices = db.session.execute(text("PRAGMA index_list('lease')")).fetchall()
-        for idx in indices:
-            print(f"Index: {idx.name} (Unique: {idx.unique})")
-            cols = db.session.execute(text(f"PRAGMA index_info('{idx.name}')")).fetchall()
-            print(f"  Columns: {[c.name for c in cols]}")
+    if not os.path.exists(DB_PATH):
+        print("Database not found.")
+        return
 
-        print("\n--- Tenant Indices ---")
-        indices = db.session.execute(text("PRAGMA index_list('tenant')")).fetchall()
-        for idx in indices:
-            print(f"Index: {idx.name} (Unique: {idx.unique})")
-            cols = db.session.execute(text(f"PRAGMA index_info('{idx.name}')")).fetchall()
-            print(f"  Columns: {[c.name for c in cols]}")
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    print("Checking Invoice Table Columns:")
+    cursor.execute("PRAGMA table_info(invoice)")
+    columns = cursor.fetchall()
+    
+    found_uuid = False
+    for col in columns:
+        print(col)
+        if col[1] == 'lhdn_uuid':
+            found_uuid = True
+            
+    if found_uuid:
+        print("\nSUCCESS: 'lhdn_uuid' column found.")
+    else:
+        print("\nFAILURE: 'lhdn_uuid' column NOT found.")
+        
+    conn.close()
 
 if __name__ == "__main__":
     check_schema()

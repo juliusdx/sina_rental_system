@@ -1,0 +1,90 @@
+{% extends "layout.html" %}
+
+{% block dashboard_content %}
+<div class="glass-container">
+    <div class="header-section">
+        <h1 class="page-title"><i class='bx bx-cog'></i> LHDN MyInvois Settings</h1>
+    </div>
+
+    <form method="POST" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+
+        <!-- Environment Selection -->
+        <div class="form-group full-width" style="margin-bottom: 30px;">
+            <label>API Environment</label>
+            <div style="display: flex; gap: 20px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="radio" name="environment" value="sandbox" {{ 'checked' if not config or
+                        config.environment=='sandbox' else '' }}>
+                    <span class="badge badge-warning">Sandbox (Testing)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="radio" name="environment" value="production" {{ 'checked' if config and
+                        config.environment=='production' else '' }}>
+                    <span class="badge badge-success">Production (Live)</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Issuer Details -->
+        <div class="section-title full-width">
+            <h3><i class='bx bx-building'></i> Issuer Details (Your Company)</h3>
+        </div>
+
+        <div class="form-group">
+            <label>Tax Identification Number (TIN)</label>
+            <input type="text" name="issuer_tin" class="form-control" placeholder="e.g. C1234567890"
+                value="{{ config.issuer_tin if config else '' }}" required>
+            <small class="text-muted">Start with C, IG, etc.</small>
+        </div>
+
+        <div class="form-group">
+            <label>MSIC Code</label>
+            <input type="text" name="issuer_msic" class="form-control" placeholder="e.g. 68101"
+                value="{{ config.issuer_msic if config else '' }}" required>
+        </div>
+
+        <!-- Digital Certificate -->
+        <div class="section-title full-width" style="margin-top: 20px;">
+            <h3><i class='bx bx-certification'></i> Digital Certificate</h3>
+        </div>
+
+        <div class="form-group full-width">
+            <label>Certificate Path (.p12)</label>
+            <input type="text" name="digital_certificate_path" class="form-control" placeholder="e.g. certs/my_cert.p12"
+                value="{{ config.digital_certificate_path if config else '' }}">
+            <small class="text-muted">Relative path to the .p12 file</small>
+        </div>
+
+        <div class="form-group full-width">
+            <label>Certificate Password / PIN</label>
+            <input type="password" name="certificate_password" class="form-control"
+                value="{{ config.certificate_password if config else '' }}">
+        </div>
+
+        <!-- API Credentials -->
+        <div class="section-title full-width" style="margin-top: 20px;">
+            <h3><i class='bx bx-key'></i> API Credentials</h3>
+        </div>
+
+        <div class="form-group full-width">
+            <label>Client ID</label>
+            <input type="text" name="client_id" class="form-control" value="{{ config.client_id if config else '' }}"
+                required>
+        </div>
+
+        <div class="form-group full-width">
+            <label>Client Secret</label>
+            <input type="password" name="client_secret" class="form-control"
+                value="{{ config.client_secret if config else '' }}" required>
+        </div>
+
+        <div class="form-group full-width"
+            style="margin-top: 30px; border-top: 1px solid var(--glass-border); padding-top: 20px; display: flex; justify-content: flex-end;">
+            <button type="submit" class="btn btn-primary">
+                <i class='bx bx-save'></i> Save Configuration
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

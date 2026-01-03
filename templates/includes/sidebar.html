@@ -33,6 +33,9 @@
             class="nav-link {% if 'reports' in request.endpoint %}active{% endif %}">
             <i class='bx bxs-file-export'></i> SST Report
         </a>
+        <a href="{{ url_for('lhdn.settings') }}" class="nav-link {% if 'lhdn' in request.endpoint %}active{% endif %}">
+            <i class='bx bx-cloud-upload'></i> LHDN e-Invoice
+        </a>
         {% if current_user.role|lower == 'admin' %}
         <!-- User Management Link - Force Reload -->
         <a href="{{ url_for('auth.register_user') }}"

@@ -50,10 +50,12 @@ class Tenant(db.Model):
     sst_start_date = db.Column(db.Date, nullable=True) # New: Effective date for charging tax
     sst_registration_number = db.Column(db.String(50)) # TIN
     msic_code = db.Column(db.String(10))
+    classification_code = db.Column(db.String(10), default='000') # LHDN Classification (000=General)
+    e_invoice_enabled = db.Column(db.Boolean, default=True) # Toggle for generating e-Invoice
     business_activity = db.Column(db.String(200))
 
     # SST Configuration
-    charge_sst = db.Column(db.Boolean, default=False) # If True, 8% SST will be added to rent
+    # (Removed duplicate charge_sst definition that was here)
 
     # Billing Address
     address_line_1 = db.Column(db.String(200))
@@ -205,6 +207,20 @@ class Lease(db.Model):
         return self.start_date <= today <= self.end_date
 
 
+
+class MyInvoisConfig(db.Model):
+    """Stores LHDN API Credentials and Configuration"""
+    id = db.Column(db.Integer, primary_key=True)
+    environment = db.Column(db.String(20), default='sandbox') # sandbox / production
+    client_id = db.Column(db.String(200))
+    client_secret = db.Column(db.String(200)) # Consider encrypting this
+    issuer_tin = db.Column(db.String(50)) # Our TIN
+    issuer_msic = db.Column(db.String(10)) # Our MSIC
+    digital_certificate_path = db.Column(db.String(200)) # Path to .p12 file
+    certificate_password = db.Column(db.String(200)) # Consider encrypting this
+    
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 class Invoice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenant.id'), nullable=False)
@@ -215,6 +231,15 @@ class Invoice(db.Model):
     # Removed specific type/amount fields, now calculated from items
     description = db.Column(db.String(200)) # Generic description e.g. "January 2024 Rent"
     status = db.Column(db.String(20), default='unpaid') # unpaid, paid, overdue, void
+    
+    # LHDN e-Invoice Fields
+    lhdn_uuid = db.Column(db.String(100), unique=True) # Internal UUID
+    lhdn_submission_uid = db.Column(db.String(100)) # Returned by LHDN
+    lhdn_long_id = db.Column(db.String(200)) # Returned by LHDN
+    lhdn_status = db.Column(db.String(20), default='Pending') # Pending, Submitted, Valid, Invalid, Cancelled
+    lhdn_validation_url = db.Column(db.String(500)) # For QR Code
+    lhdn_submission_date = db.Column(db.DateTime)
+    lhdn_type_code = db.Column(db.String(10), default='01') # 01=Invoice, 02=Credit Note
     
     line_items = db.relationship('InvoiceLineItem', backref='invoice', lazy=True, cascade="all, delete-orphan")
 

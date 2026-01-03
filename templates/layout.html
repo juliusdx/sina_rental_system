@@ -17,6 +17,23 @@
 
     <main class="main-content">
         <!-- Optional Global Header? Individual Pages usually implement their own headers -->
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages" style="margin-bottom: 20px;">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'error' else 'danger' }}" role="alert" style="padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;
+                            background: {{ 'rgba(16, 185, 129, 0.2)' if category == 'success' else 'rgba(239, 68, 68, 0.2)' }};
+                            border: 1px solid {{ '#10b981' if category == 'success' else '#ef4444' }};
+                            color: {{ '#d1fae5' if category == 'success' else '#fee2e2' }};">
+                <i class='bx {{ "bx-check-circle" if category == "success" else "bx-error-circle" }}'></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
         {% block dashboard_content %}{% endblock %}
     </main>
 </div>

@@ -80,3 +80,8 @@ venv_broken/
 $*
 
 ~$*
+
+# LHDN Debug & Certs
+lhdn_*.json
+lhdn_*.xml
+*.p12

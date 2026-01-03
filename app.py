@@ -32,6 +32,9 @@ def create_app():
     app.register_blueprint(properties_bp, url_prefix='/properties')
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(agents_bp)
+    from routes.lhdn import lhdn_bp
+    app.register_blueprint(lhdn_bp, url_prefix='/lhdn')
+
     from routes.reports import reports_bp
     app.register_blueprint(reports_bp, url_prefix='/reports')
 
